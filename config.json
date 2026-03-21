@@ -1,0 +1,19 @@
+{
+    "SERVER_DIR": "/home/xkanzy/Рабочий стол/server_test/",
+    "SERVER_JAR": "server.jar",
+    "JAVA_CMD": "java",
+    "JAVA_ARGS": [
+        "-Xmx1024M",
+        "-Xms1024M",
+        "-jar",
+        "server.jar",
+        "nogui"
+    ],
+    "LOG_FILE": "/home/xkanzy/Рабочий стол/server_test/logs/latest.log",
+    "PID_FILE": "/home/xkanzy/Рабочий стол/server_test/server.pid",
+    "BACKUP_DIR": "/home/xkanzy/Рабочий стол/server_test/backups",
+    "PLUGINS_DIR": "/home/xkanzy/Рабочий стол/server_test/plugins",
+    "STATS_FILE": "/home/xkanzy/Рабочий стол/server_test/stats.json",
+    "STATS_INTERVAL": 10,
+    "MAX_BACKUPS": 10
+}

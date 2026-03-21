@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ _('Settings') }}</h1>
+
+<div class="card">
+    <div class="card-body">
+        <form id="settingsForm">
+            <div class="mb-3">
+                <label for="server_dir" class="form-label">{{ _('Server Directory') }}</label>
+                <input type="text" class="form-control" id="server_dir" value="{{ config.SERVER_DIR }}">
+            </div>
+            <div class="mb-3">
+                <label for="server_jar" class="form-label">{{ _('Server JAR') }}</label>
+                <input type="text" class="form-control" id="server_jar" value="{{ config.SERVER_JAR }}">
+            </div>
+            <div class="mb-3">
+                <label for="java_cmd" class="form-label">{{ _('Java Command') }}</label>
+                <input type="text" class="form-control" id="java_cmd" value="{{ config.JAVA_CMD }}">
+            </div>
+            <div class="mb-3">
+                <label for="java_args" class="form-label">{{ _('Java Arguments') }}</label>
+                <input type="text" class="form-control" id="java_args" value="{{ config.JAVA_ARGS|join(' ') }}">
+            </div>
+            <div class="mb-3">
+                <label for="max_backups" class="form-label">{{ _('Max Backups') }}</label>
+                <input type="number" class="form-control" id="max_backups" value="{{ config.MAX_BACKUPS }}">
+            </div>
+            <button type="submit" class="btn btn-primary">{{ _('Save Changes') }}</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = {
+            SERVER_DIR: document.getElementById('server_dir').value,
+            SERVER_JAR: document.getElementById('server_jar').value,
+            JAVA_CMD: document.getElementById('java_cmd').value,
+            JAVA_ARGS: document.getElementById('java_args').value,
+            MAX_BACKUPS: parseInt(document.getElementById('max_backups').value)
+        };
+        const res = await fetch('/api/settings', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            alert('{{ _("Settings saved. Some changes may require a server restart.") }}');
+            location.reload();
+        } else {
+            alert('{{ _("Failed to save settings.") }}');
+        }
+    });
+</script>
+{% endblock %}

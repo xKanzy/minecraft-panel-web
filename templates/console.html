@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ _('Console') }}</h1>
+<div class="row">
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                {{ _('Send Command') }}
+            </div>
+            <div class="card-body">
+                <div class="input-group">
+                    <input type="text" id="commandInput" class="form-control" placeholder="{{ _('Enter command...') }}">
+                    <button id="sendCmd" class="btn btn-primary">{{ _('Send') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="card">
+    <div class="card-header">
+        {{ _('Logs') }}
+    </div>
+    <div class="card-body">
+        <div id="logs" style="height: 400px; overflow-y: auto; background: #1e1e1e; font-family: monospace; padding: 10px;"></div>
+    </div>
+</div>
+
+<script>
+    let lastLogSize = 0;
+
+    function colorizeLine(line) {
+        let className = 'log-default';
+        if (line.includes('[ERROR]') || line.includes('[SEVERE]') || line.toLowerCase().includes('error')) {
+            className = 'log-error';
+        } else if (line.includes('[WARNING]') || line.includes('[WARN]')) {
+            className = 'log-warning';
+        } else if (line.includes('[INFO]')) {
+            className = 'log-info';
+        } else if (line.includes('[SUCCESS]')) {
+            className = 'log-success';
+        } else if (line.startsWith('> ') || line.includes('issued server command')) {
+            className = 'log-command';
+        }
+        return `<div class="${className}">${escapeHtml(line)}</div>`;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function appendNewLines(lines) {
+        const logsDiv = document.getElementById('logs');
+        for (const line of lines) {
+            logsDiv.insertAdjacentHTML('beforeend', colorizeLine(line));
+        }
+        logsDiv.scrollTop = logsDiv.scrollHeight;
+    }
+
+    function fetchLogUpdates() {
+        fetch(`/api/logs/updates?size=${lastLogSize}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.lines && data.lines.length > 0) {
+                    appendNewLines(data.lines);
+                }
+                lastLogSize = data.size;
+            });
+    }
+
+    document.getElementById('sendCmd').onclick = () => {
+        const cmd = document.getElementById('commandInput').value;
+        fetch('/api/command', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({command: cmd})
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'sent') {
+                    document.getElementById('commandInput').value = '';
+                    fetchLogUpdates();
+                } else {
+                    alert('Error sending command');
+                }
+            });
+    };
+
+    // Инициализация: загружаем последние 50 строк
+    fetch('/api/logs?lines=50')
+        .then(res => res.json())
+        .then(data => {
+            appendNewLines(data.logs);
+            lastLogSize = data.logs.length; // приблизительный, потом обновится
+            fetchLogUpdates();
+        });
+
+    setInterval(fetchLogUpdates, 5000);
+</script>
+{% endblock %}

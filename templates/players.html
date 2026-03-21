@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ _('Online Players') }}</h1>
+<div class="card">
+    <div class="card-body">
+        <ul id="playersList" class="list-group">
+            <li class="list-group-item">{{ _('Loading...') }}</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    function updatePlayers() {
+        fetch('/api/players')
+            .then(res => res.json())
+            .then(data => {
+                const list = document.getElementById('playersList');
+                list.innerHTML = '';
+                if (data.players.length === 0) {
+                    list.innerHTML = '<li class="list-group-item">{{ _("No players online.") }}</li>';
+                } else {
+                    data.players.forEach(player => {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item';
+                        li.textContent = player;
+                        list.appendChild(li);
+                    });
+                }
+            });
+    }
+
+    updatePlayers();
+    setInterval(updatePlayers, 5000);
+</script>
+{% endblock %}

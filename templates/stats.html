@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ _('Server Statistics') }}</h1>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                {{ _('CPU Usage') }}
+            </div>
+            <div class="card-body">
+                <canvas id="cpuChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                {{ _('RAM Usage') }}
+            </div>
+            <div class="card-body">
+                <canvas id="ramChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let cpuChart, ramChart;
+
+    function initCharts() {
+        const ctxCpu = document.getElementById('cpuChart').getContext('2d');
+        const ctxRam = document.getElementById('ramChart').getContext('2d');
+        cpuChart = new Chart(ctxCpu, {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'CPU %', data: [], borderColor: 'red', fill: false }] },
+            options: { responsive: true }
+        });
+        ramChart = new Chart(ctxRam, {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'RAM %', data: [], borderColor: 'blue', fill: false }] },
+            options: { responsive: true }
+        });
+    }
+
+    function updateStats() {
+        fetch('/api/stats')
+            .then(res => res.json())
+            .then(data => {
+                // data is array of {timestamp, cpu, ram}
+                const timestamps = data.map(p => new Date(p.timestamp * 1000).toLocaleTimeString());
+                const cpuData = data.map(p => p.cpu);
+                const ramData = data.map(p => p.ram);
+                cpuChart.data.labels = timestamps;
+                cpuChart.data.datasets[0].data = cpuData;
+                cpuChart.update();
+                ramChart.data.labels = timestamps;
+                ramChart.data.datasets[0].data = ramData;
+                ramChart.update();
+            });
+    }
+
+    initCharts();
+    updateStats();
+    setInterval(updateStats, 10000);
+</script>
+{% endblock %}

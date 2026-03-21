@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ _('Backups') }}</h1>
+
+<div class="card mb-4">
+    <div class="card-header">
+        {{ _('Create Backup') }}
+    </div>
+    <div class="card-body">
+        <button id="createBackupBtn" class="btn btn-success">{{ _('Create New Backup') }}</button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        {{ _('Available Backups') }}
+    </div>
+    <div class="card-body">
+        <ul id="backupsList" class="list-group">
+            <li class="list-group-item">{{ _('Loading...') }}</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    function loadBackups() {
+        fetch('/api/backups')
+            .then(res => res.json())
+            .then(data => {
+                const list = document.getElementById('backupsList');
+                list.innerHTML = '';
+                if (data.backups.length === 0) {
+                    list.innerHTML = '<li class="list-group-item">{{ _("No backups found.") }}</li>';
+                } else {
+                    data.backups.forEach(backup => {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                        li.innerHTML = `
+                            <span><strong>${backup.name}</strong><br><small>${backup.modified} | ${(backup.size / 1024 / 1024).toFixed(2)} MB</small></span>
+                            <div>
+                                <button class="btn btn-sm btn-warning me-1" onclick="restoreBackup('${backup.name}')">{{ _('Restore') }}</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteBackup('${backup.name}')">{{ _('Delete') }}</button>
+                            </div>
+                        `;
+                        list.appendChild(li);
+                    });
+                }
+            });
+    }
+
+    function createBackup() {
+        fetch('/api/backups/create', {method: 'POST'})
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message);
+                loadBackups();
+            });
+    }
+
+    function restoreBackup(name) {
+        if (confirm('{{ _("Restoring will overwrite the current world. Continue?") }}')) {
+            fetch(`/api/backups/restore/${name}`, {method: 'POST'})
+                .then(res => res.json())
+                .then(data => {
+                    alert(data.message);
+                    loadBackups();
+                });
+        }
+    }
+
+    function deleteBackup(name) {
+        if (confirm('{{ _("Are you sure you want to delete this backup?") }}')) {
+            fetch(`/api/backups/delete/${name}`, {method: 'DELETE'})
+                .then(() => loadBackups());
+        }
+    }
+
+    document.getElementById('createBackupBtn').onclick = createBackup;
+    loadBackups();
+</script>
+{% endblock %}

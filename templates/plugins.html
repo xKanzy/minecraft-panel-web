@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ _('Plugins') }}</h1>
+
+<div class="card mb-4">
+    <div class="card-header">
+        {{ _('Upload Plugin') }}
+    </div>
+    <div class="card-body">
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="input-group">
+                <input type="file" id="pluginFile" class="form-control" accept=".jar">
+                <button type="submit" class="btn btn-primary">{{ _('Upload') }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        {{ _('Installed Plugins') }}
+    </div>
+    <div class="card-body">
+        <ul id="pluginsList" class="list-group">
+            <li class="list-group-item">{{ _('Loading...') }}</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    function loadPlugins() {
+        fetch('/api/plugins')
+            .then(res => res.json())
+            .then(data => {
+                const list = document.getElementById('pluginsList');
+                list.innerHTML = '';
+                if (data.plugins.length === 0) {
+                    list.innerHTML = '<li class="list-group-item">{{ _("No plugins installed.") }}</li>';
+                } else {
+                    data.plugins.forEach(plugin => {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                        li.innerHTML = `
+                            <span>${plugin.name} (${(plugin.size / 1024).toFixed(1)} KB)</span>
+                            <button class="btn btn-sm btn-danger" onclick="deletePlugin('${plugin.name}')">{{ _('Delete') }}</button>
+                        `;
+                        list.appendChild(li);
+                    });
+                }
+            });
+    }
+
+    function deletePlugin(name) {
+        if (confirm('{{ _("Are you sure you want to delete this plugin?") }}')) {
+            fetch(`/api/plugins/delete/${name}`, {method: 'DELETE'})
+                .then(() => loadPlugins());
+        }
+    }
+
+    document.getElementById('uploadForm').onsubmit = (e) => {
+        e.preventDefault();
+        const fileInput = document.getElementById('pluginFile');
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        fetch('/api/plugins/upload', {method: 'POST', body: formData})
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'uploaded') {
+                    alert('{{ _("Plugin uploaded successfully") }}');
+                    fileInput.value = '';
+                    loadPlugins();
+                } else {
+                    alert('{{ _("Upload failed") }}');
+                }
+            });
+    };
+
+    loadPlugins();
+</script>
+{% endblock %}
