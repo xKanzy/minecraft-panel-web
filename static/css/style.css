@@ -28,7 +28,6 @@ body {
     position: relative;
 }
 
-/* Сетчатый фон */
 body::before {
     content: '';
     position: fixed;
@@ -49,13 +48,13 @@ body::before {
     z-index: 1;
 }
 
-/* Навбар */
 .navbar {
     background: rgba(15, 15, 26, 0.95) !important;
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--primary);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     padding: 0.75rem 0;
+    overflow: visible !important;
 }
 
 .navbar-brand {
@@ -96,6 +95,72 @@ body::before {
 .nav-link.active {
     background: rgba(76, 175, 80, 0.3);
     color: var(--primary-light) !important;
+}
+
+/* Выпадающее меню */
+.dropdown-menu {
+    z-index: 999999 !important;
+    position: absolute !important;
+    background: rgba(26, 26, 46, 0.98) !important;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(76, 175, 80, 0.5);
+    border-radius: 12px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+    margin-top: 0.5rem !important;
+    animation: fadeIn 0.2s ease-out;
+    overflow: visible !important;
+    max-width: 90vw;
+}
+
+.dropdown-item {
+    color: #f0f0f0 !important;
+    padding: 0.6rem 1.5rem !important;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+    background: rgba(76, 175, 80, 0.2) !important;
+    color: #7cdf4c !important;
+}
+
+.dropdown-item.active {
+    background: rgba(76, 175, 80, 0.3) !important;
+    color: #7cdf4c !important;
+}
+
+.dropdown-divider {
+    border-top: 1px solid rgba(76, 175, 80, 0.3);
+    margin: 0.5rem 0;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dropdown-toggle::after {
+    transition: transform 0.2s ease;
+}
+
+.dropdown.show .dropdown-toggle::after {
+    transform: rotate(180deg);
+}
+
+.navbar,
+.navbar-collapse,
+.collapse,
+.navbar-nav,
+.dropdown {
+    overflow: visible !important;
+    z-index: auto !important;
 }
 
 /* Карточки */
@@ -150,38 +215,35 @@ body::before {
     letter-spacing: 0.5px;
     font-size: 0.85rem;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    color: #fff !important;
 }
 
 .btn-success {
     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
     border: none;
     box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-    color: white;
 }
 
 .btn-success:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(76, 175, 80, 0.4);
-    color: white;
 }
 
 .btn-danger {
     background: linear-gradient(135deg, var(--danger), #c62828);
     border: none;
     box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
-    color: white;
 }
 
 .btn-warning {
     background: linear-gradient(135deg, var(--warning), #f57c00);
     border: none;
-    color: var(--dark);
+    color: var(--dark) !important;
 }
 
 .btn-primary {
     background: linear-gradient(135deg, var(--secondary), #0b5ed7);
     border: none;
-    color: white;
 }
 
 .btn-sm {
@@ -347,7 +409,7 @@ footer a:hover {
     animation: pulse 1s infinite;
 }
 
-/* Карточки плагинов в Modrinth */
+/* Карточки плагинов */
 #results .card {
     background: rgba(35, 35, 45, 0.95) !important;
     backdrop-filter: blur(4px);
@@ -387,38 +449,20 @@ footer a:hover {
 #systemStats p {
     color: var(--light);
 }
-#results .card,
-#results .card * {
-    color: #f0f0f0 !important;
-}
 
-#results .card-title {
-    color: #7cdf4c !important;
+/* Кастомное модальное окно */
+#customModal {
+    background: rgba(0, 0, 0, 0.5);
 }
-
-#results .card-text,
-#results .text-muted,
-#results small,
-#results .card-body p,
-#results .card-body span,
-#results .card-body div {
-    color: #e0e0e0 !important;
+#customModal > div {
+    background: #1e1e2e;
+    border: 1px solid #4caf50;
 }
-
-#results .badge {
-    color: white !important;
+#customModal textarea {
+    background: #0f0f1a;
+    color: #e0e0e0;
+    border-color: #4caf50;
 }
-
-/* Футер на всех страницах */
-footer,
-footer * {
-    color: #aaa !important;
-}
-
-footer a {
-    color: #7cdf4c !important;
-}
-
-footer a:hover {
-    color: #4caf50 !important;
+#customModal button.close {
+    color: #fff;
 }

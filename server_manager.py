@@ -2,7 +2,7 @@ import subprocess
 import os
 import time
 import psutil
-import sys
+import re
 from config_manager import config
 
 class MinecraftServerManager:
@@ -37,7 +37,6 @@ class MinecraftServerManager:
             proc = psutil.Process(self.pid)
             cmdline = ' '.join(proc.cmdline())
             server_jar = config.get('SERVER_JAR')
-            # Проверяем, что это Java процесс и содержит server.jar
             if ('java' in proc.name().lower() or 'javaw' in proc.name().lower()) and server_jar in cmdline:
                 return True
             else:
@@ -55,30 +54,26 @@ class MinecraftServerManager:
         server_dir = config.get('SERVER_DIR')
         if not server_dir or not os.path.isdir(server_dir):
             return "Server directory not configured or does not exist."
-        
         os.chdir(server_dir)
         stdout_path = os.path.join(server_dir, "server_stdout.log")
+        # Очищаем файл, не удаляя его (чтобы SSE-поток не потерял соединение)
+        try:
+            with open(stdout_path, 'w') as f:
+                pass
+        except:
+            with open(stdout_path, 'a'):
+                pass
         self.stdout_file = open(stdout_path, "a", encoding='utf-8')
-        
-        # Команда запуска
         java_cmd = config.get('JAVA_CMD')
         java_args = config.get('JAVA_ARGS')
-        
-        # Для Windows, если java.exe не найден, ищем в PATH
-        if sys.platform == 'win32' and not os.path.exists(java_cmd):
-            import shutil
-            java_cmd = shutil.which('java') or 'java'
-        
         cmd = [java_cmd] + java_args
-        
         self.process = subprocess.Popen(
             cmd,
             stdin=subprocess.PIPE,
             stdout=self.stdout_file,
             stderr=subprocess.STDOUT,
             universal_newlines=True,
-            bufsize=1,
-            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
+            bufsize=1
         )
         self.pid = self.process.pid
         pid_file = config.get('PID_FILE')
@@ -169,25 +164,60 @@ class MinecraftServerManager:
             return [], 0
 
     def get_players(self):
-        log_file = config.get('LOG_FILE')
-        if not log_file or not os.path.exists(log_file):
-            return []
+        """Возвращает список онлайн-игроков, анализируя лог-файлы."""
         players = set()
-        try:
-            with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
-                for line in f:
-                    if "joined the game" in line:
-                        parts = line.split()
-                        for i, part in enumerate(parts):
-                            if part == "joined" and i > 0:
-                                players.add(parts[i-1])
-                    elif "players online:" in line:
-                        if ": " in line:
-                            after = line.split(": ", 1)[1]
-                            for name in after.split(","):
-                                players.add(name.strip())
-        except:
-            pass
+        log_files = [
+            config.get('LOG_FILE'),
+            os.path.join(config.get('SERVER_DIR'), "server_stdout.log")
+        ]
+        strip_color = re.compile(r'§[0-9a-fklmnor]')
+        for log_path in log_files:
+            if not log_path or not os.path.exists(log_path):
+                continue
+            try:
+                with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    for line in f:
+                        line = strip_color.sub('', line)
+
+                        # 1. Вход игрока (logged in / joined)
+                        if "logged in" in line:
+                            match = re.search(r'\s([\w_]+)\[/', line)
+                            if match:
+                                players.add(match.group(1))
+                        elif "joined the game" in line:
+                            parts = line.split()
+                            for i, part in enumerate(parts):
+                                if part == "joined" and i > 0:
+                                    name = parts[i-1].strip()
+                                    if name:
+                                        players.add(name)
+                                    break
+
+                        # 2. Выход игрока
+                        elif "left the game" in line or "disconnected" in line:
+                            parts = line.split()
+                            for i, part in enumerate(parts):
+                                if part == "left" or part == "disconnected":
+                                    if i > 0:
+                                        name = parts[i-1].strip()
+                                        if name:
+                                            players.discard(name)
+                                    break
+
+                        # 3. Команда /list
+                        elif "players online:" in line:
+                            if ": " in line:
+                                after = line.split(": ", 1)[1]
+                                # Пропускаем строки без имён (например, "There are 0/20 players online:")
+                                if after.strip().startswith("There are"):
+                                    continue
+                                # Извлекаем имена
+                                for name in after.split(","):
+                                    name = name.strip()
+                                    if name and not name.isdigit() and "players online" not in name:
+                                        players.add(name)
+            except Exception:
+                continue
         return list(players)
 
     def cleanup(self):

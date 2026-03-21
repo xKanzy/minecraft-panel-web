@@ -15,5 +15,7 @@
     "PLUGINS_DIR": "/home/xkanzy/Рабочий стол/server_test/plugins",
     "STATS_FILE": "/home/xkanzy/Рабочий стол/server_test/stats.json",
     "STATS_INTERVAL": 10,
-    "MAX_BACKUPS": 10
+    "MAX_BACKUPS": 10,
+    "CURSEFORGE_API_KEY": "$2a$10$toSnnEqNwOKidy9LnNbSGutQueDV4idTmpdKgIhPK9PeF0InJ1izi",
+    "ADMIN_PASSWORD_HASH": ""
 }

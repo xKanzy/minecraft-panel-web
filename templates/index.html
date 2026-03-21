@@ -59,6 +59,8 @@
 
 <script>
     let lastLogSize = 0;
+    let eventSource = null;
+    let pollingInterval = null;
 
     function colorizeLine(line) {
         let className = 'log-default';
@@ -90,14 +92,91 @@
         logsDiv.scrollTop = logsDiv.scrollHeight;
     }
 
-    function fetchLogUpdates() {
-        fetch(`/api/logs/updates?size=${lastLogSize}`)
+    // Загружаем последние строки при старте
+    fetch('/api/logs?lines=15')
+        .then(res => res.json())
+        .then(data => {
+            appendNewLines(data.logs);
+            lastLogSize = data.logs.length;
+            connectSSE();
+        });
+
+    function connectSSE() {
+        if (eventSource) eventSource.close();
+        let url = `/api/logs/stream`;
+        if (lastLogSize) url += `?size=${lastLogSize}`;
+        eventSource = new EventSource(url);
+        eventSource.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.lines && data.lines.length > 0) {
+                appendNewLines(data.lines);
+            }
+        };
+        eventSource.onerror = (err) => {
+            console.error("EventSource failed", err);
+            eventSource.close();
+            eventSource = null;
+            startPolling();
+        };
+    }
+
+    function startPolling() {
+        if (pollingInterval) clearInterval(pollingInterval);
+        pollingInterval = setInterval(() => {
+            fetch(`/api/logs/updates?size=${lastLogSize}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.lines && data.lines.length > 0) {
+                        appendNewLines(data.lines);
+                    }
+                    lastLogSize = data.size;
+                });
+        }, 3000);
+    }
+
+    // --- Остальные функции дашборда ---
+    function updateStatus() {
+        fetch('/api/status')
             .then(res => res.json())
             .then(data => {
-                if (data.lines && data.lines.length > 0) {
-                    appendNewLines(data.lines);
+                const statusDiv = document.getElementById('status');
+                if (data.running) {
+                    statusDiv.textContent = '{{ _("Running") }}';
+                    statusDiv.className = 'alert alert-success';
+                } else {
+                    statusDiv.textContent = '{{ _("Stopped") }}';
+                    statusDiv.className = 'alert alert-secondary';
                 }
-                lastLogSize = data.size;
+            });
+    }
+
+    function updatePlayers() {
+        // Сначала проверяем статус сервера
+        fetch('/api/status')
+            .then(res => res.json())
+            .then(status => {
+                if (!status.running) {
+                    const list = document.getElementById('playersList');
+                    list.innerHTML = '<li class="list-group-item text-muted">{{ _("Server is offline") }}</li>';
+                    return;
+                }
+                // Сервер запущен – запрашиваем игроков
+                fetch('/api/players')
+                    .then(res => res.json())
+                    .then(data => {
+                        const list = document.getElementById('playersList');
+                        list.innerHTML = '';
+                        if (data.players.length === 0) {
+                            list.innerHTML = '<li class="list-group-item">{{ _("No players online.") }}</li>';
+                        } else {
+                            data.players.forEach(player => {
+                                const li = document.createElement('li');
+                                li.className = 'list-group-item';
+                                li.textContent = player;
+                                list.appendChild(li);
+                            });
+                        }
+                    });
             });
     }
 
@@ -115,40 +194,6 @@
             });
     }
 
-    function updateStatus() {
-        fetch('/api/status')
-            .then(res => res.json())
-            .then(data => {
-                const statusDiv = document.getElementById('status');
-                if (data.running) {
-                    statusDiv.textContent = '{{ _("Running") }}';
-                    statusDiv.className = 'alert alert-success';
-                } else {
-                    statusDiv.textContent = '{{ _("Stopped") }}';
-                    statusDiv.className = 'alert alert-secondary';
-                }
-            });
-    }
-
-    function updatePlayers() {
-        fetch('/api/players')
-            .then(res => res.json())
-            .then(data => {
-                const list = document.getElementById('playersList');
-                list.innerHTML = '';
-                if (data.players.length === 0) {
-                    list.innerHTML = '<li class="list-group-item">{{ _("No players online.") }}</li>';
-                } else {
-                    data.players.forEach(player => {
-                        const li = document.createElement('li');
-                        li.className = 'list-group-item';
-                        li.textContent = player;
-                        list.appendChild(li);
-                    });
-                }
-            });
-    }
-
     function sendCommand() {
         const cmd = document.getElementById('cmdInput').value;
         if (!cmd) return;
@@ -160,7 +205,6 @@
             .then(res => res.json())
             .then(data => {
                 document.getElementById('cmdInput').value = '';
-                fetchLogUpdates();
             });
     }
 
@@ -173,18 +217,18 @@
                 updatePlayers();
                 lastLogSize = 0;
                 document.getElementById('miniLogs').innerHTML = '';
-                fetchLogUpdates();
+                fetch('/api/logs?lines=15')
+                    .then(res => res.json())
+                    .then(data => {
+                        appendNewLines(data.logs);
+                        lastLogSize = data.logs.length;
+                        if (eventSource) {
+                            eventSource.close();
+                            connectSSE();
+                        }
+                    });
             });
     }
-
-    // Инициализация логов
-    fetch('/api/logs?lines=15')
-        .then(res => res.json())
-        .then(data => {
-            appendNewLines(data.logs);
-            lastLogSize = data.logs.length;
-            fetchLogUpdates();
-        });
 
     document.getElementById('startBtn').onclick = () => {
         fetch('/api/start', {method: 'POST'})
@@ -193,7 +237,6 @@
                 alert(data.message);
                 updateStatus();
                 updatePlayers();
-                fetchLogUpdates();
             });
     };
 
@@ -204,7 +247,6 @@
                 alert(data.message);
                 updateStatus();
                 updatePlayers();
-                fetchLogUpdates();
             });
     };
 
@@ -217,11 +259,7 @@
     updateStatus();
     updatePlayers();
     updateSystemStats();
-
-    // Обновление каждые 2 секунды
-    setInterval(updateStatus, 2000);
-    setInterval(updatePlayers, 10000);
     setInterval(updateSystemStats, 2000);
-    setInterval(fetchLogUpdates, 5000);
+    setInterval(updatePlayers, 10000);
 </script>
 {% endblock %}

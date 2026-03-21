@@ -9,14 +9,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Favicon (замените на свою иконку) -->
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/icon.png') }}">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('index') }}">
-                <!-- Иконка в меню (можно заменить на картинку) -->
                 <img src="{{ url_for('static', filename='img/icon.png') }}" alt="logo" height="32" class="d-inline-block align-text-top me-2" style="border-radius: 8px;">
                 {{ _('Minecraft Server Panel') }}
             </a>
@@ -25,14 +23,26 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}">{{ _('Dashboard') }}</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('console') }}">{{ _('Console') }}</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('players') }}">{{ _('Players') }}</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('plugins') }}">{{ _('Plugins') }}</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('modrinth') }}">{{ _('Modrinth') }}</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('backups') }}">{{ _('Backups') }}</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('stats') }}">{{ _('Statistics') }}</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('settings') }}">{{ _('Settings') }}</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">{{ _('Dashboard') }}</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.endpoint == 'console' %}active{% endif %}" href="{{ url_for('console') }}">{{ _('Console') }}</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.endpoint == 'players' %}active{% endif %}" href="{{ url_for('players') }}">{{ _('Players') }}</a></li>
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="toolsDropdown" role="button">{{ _('Tools') }}</a>
+                        <ul class="dropdown-menu" aria-labelledby="toolsDropdown" style="display: none;">
+                            <li><a class="dropdown-item {% if request.endpoint == 'plugins' %}active{% endif %}" href="{{ url_for('plugins') }}">{{ _('Plugins') }}</a></li>
+                            <li><a class="dropdown-item {% if request.endpoint == 'filemanager' %}active{% endif %}" href="{{ url_for('filemanager') }}">{{ _('File Manager') }}</a></li>
+                            <li><a class="dropdown-item {% if request.endpoint == 'backups' %}active{% endif %}" href="{{ url_for('backups') }}">{{ _('Backups') }}</a></li>
+                            <li><a class="dropdown-item {% if request.endpoint == 'stats' %}active{% endif %}" href="{{ url_for('stats') }}">{{ _('Statistics') }}</a></li>
+                            {% if current_user.is_authenticated and current_user.is_admin %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item {% if request.endpoint == 'admin_tools' %}active{% endif %}" href="{{ url_for('admin_tools') }}">{{ _('Admin Tools') }}</a></li>
+                            <li><a class="dropdown-item {% if request.endpoint == 'settings' %}active{% endif %}" href="{{ url_for('settings') }}">{{ _('Settings') }}</a></li>
+                            {% endif %}
+                        </ul>
+                    </li>
+
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">{{ _('Logout') }}</a></li>
                 </ul>
                 <div class="language-switcher">
                     <a href="{{ url_for('set_language', lang='en') }}" class="btn btn-sm btn-outline-light me-1">EN</a>
@@ -45,6 +55,57 @@
         {% block content %}{% endblock %}
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        (function() {
+            // Находим все dropdown-меню
+            const dropdowns = document.querySelectorAll('.dropdown');
+            dropdowns.forEach(dropdown => {
+                const toggle = dropdown.querySelector('.dropdown-toggle');
+                const originalMenu = dropdown.querySelector('.dropdown-menu');
+                if (!toggle || !originalMenu) return;
+
+                // Создаём копию меню и перемещаем в body
+                const menu = originalMenu.cloneNode(true);
+                document.body.appendChild(menu);
+                originalMenu.style.display = 'none'; // скрываем оригинал
+
+                // Открытие/закрытие по клику на кнопку
+                toggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const isVisible = menu.style.display === 'block';
+                    // Закрываем все другие меню
+                    document.querySelectorAll('.custom-dropdown-menu').forEach(m => {
+                        if (m !== menu) m.style.display = 'none';
+                    });
+                    if (isVisible) {
+                        menu.style.display = 'none';
+                    } else {
+                        menu.style.display = 'block';
+                        // Позиционируем меню под кнопкой
+                        const rect = toggle.getBoundingClientRect();
+                        menu.style.position = 'fixed';
+                        menu.style.top = rect.bottom + window.scrollY + 'px';
+                        menu.style.left = rect.left + window.scrollX + 'px';
+                        menu.style.zIndex = '9999999';
+                        // Корректируем, если не влезает по ширине
+                        const menuRect = menu.getBoundingClientRect();
+                        if (menuRect.right > window.innerWidth) {
+                            menu.style.left = (rect.right - menuRect.width) + window.scrollX + 'px';
+                        }
+                    }
+                });
+
+                // Закрываем при клике вне меню
+                document.addEventListener('click', function(e) {
+                    if (!toggle.contains(e.target) && !menu.contains(e.target)) {
+                        menu.style.display = 'none';
+                    }
+                });
+
+                menu.classList.add('custom-dropdown-menu');
+            });
+        })();
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

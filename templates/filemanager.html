@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ _('File Manager') }}</h1>
+<div class="row">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header">{{ _('Current Path') }}</div>
+            <div class="card-body">
+                <input type="text" id="currentPath" class="form-control mb-2" readonly>
+                <button id="goUpBtn" class="btn btn-sm btn-secondary w-100">{{ _('Go Up') }}</button>
+            </div>
+        </div>
+        <div class="card mt-3">
+            <div class="card-header">{{ _('Actions') }}</div>
+            <div class="card-body">
+                <button id="newFileBtn" class="btn btn-sm btn-outline-success w-100 mb-2">{{ _('New File') }}</button>
+                <button id="newFolderBtn" class="btn btn-sm btn-outline-primary w-100 mb-2">{{ _('New Folder') }}</button>
+                <button id="uploadBtn" class="btn btn-sm btn-outline-info w-100">{{ _('Upload File') }}</button>
+                <input type="file" id="uploadFileInput" style="display:none">
+            </div>
+        </div>
+    </div>
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>{{ _('Files and Directories') }}</span>
+                    <button id="refreshBtn" class="btn btn-sm btn-secondary">{{ _('Refresh') }}</button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush" id="fileList">
+                    <div class="list-group-item text-center">{{ _('Loading...') }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom modal (no Bootstrap modal JS) -->
+<div id="customModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
+    <div style="background:#1e1e2e; border-radius:12px; width:90%; max-width:800px; max-height:90%; overflow:auto; padding:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #4caf50; margin-bottom:15px;">
+            <h3 style="margin:0;">{{ _('Edit File') }}</h3>
+            <button id="closeModalBtn" style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
+        </div>
+        <textarea id="modalFileContent" class="form-control" rows="20" style="font-family: monospace;"></textarea>
+        <div style="margin-top:15px; text-align:right;">
+            <button id="saveModalBtn" class="btn btn-primary">{{ _('Save') }}</button>
+            <button id="cancelModalBtn" class="btn btn-secondary">{{ _('Cancel') }}</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPath = '';
+    let editingFile = null;
+
+    // Clean up any leftover Bootstrap modal backdrops
+    function cleanUpBackdrops() {
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        document.body.classList.remove('modal-open');
+    }
+
+    function loadDirectory(path) {
+        fetch(`/api/filemanager/list?path=${encodeURIComponent(path)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('fileList').innerHTML = `<div class="list-group-item text-danger">${data.error}</div>`;
+                    return;
+                }
+                currentPath = data.path;
+                document.getElementById('currentPath').value = currentPath;
+                const container = document.getElementById('fileList');
+                container.innerHTML = '';
+                const dirs = data.items.filter(i => i.is_dir);
+                const files = data.items.filter(i => !i.is_dir);
+                [...dirs, ...files].forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'list-group-item d-flex justify-content-between align-items-center';
+                    const icon = item.is_dir ? '📁' : '📄';
+                    div.innerHTML = `
+                        <div class="d-flex align-items-center">
+                            <span class="me-2">${icon}</span>
+                            <span class="file-name" style="cursor:pointer">${escapeHtml(item.name)}</span>
+                        </div>
+                        <div>
+                            ${!item.is_dir ? `<button class="btn btn-sm btn-warning me-1 edit-btn" data-path="${item.path}">Edit</button>` : ''}
+                            <button class="btn btn-sm btn-danger delete-btn" data-path="${item.path}" data-is-dir="${item.is_dir}">Delete</button>
+                        </div>
+                    `;
+                    const nameSpan = div.querySelector('.file-name');
+                    nameSpan.onclick = () => {
+                        if (item.is_dir) loadDirectory(item.path);
+                        else editFile(item.path);
+                    };
+                    const editBtn = div.querySelector('.edit-btn');
+                    if (editBtn) editBtn.onclick = () => editFile(item.path);
+                    const delBtn = div.querySelector('.delete-btn');
+                    delBtn.onclick = () => deleteItem(item.path, item.is_dir);
+                    container.appendChild(div);
+                });
+            })
+            .catch(err => {
+                console.error("Load directory error:", err);
+                document.getElementById('fileList').innerHTML = '<div class="list-group-item text-danger">Failed to load directory</div>';
+            });
+    }
+
+    function editFile(filePath) {
+        cleanUpBackdrops();
+        fetch(`/api/filemanager/file?path=${encodeURIComponent(filePath)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+                editingFile = filePath;
+                document.getElementById('modalFileContent').value = data.content;
+                const modal = document.getElementById('customModal');
+                modal.style.display = 'flex';
+                // Force reflow to trigger transition
+                modal.offsetHeight;
+                modal.classList.add('show');
+            })
+            .catch(err => {
+                console.error("Fetch file error:", err);
+                alert("Failed to load file: " + err);
+            });
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('customModal');
+        modal.classList.remove('show');
+        setTimeout(() => {
+            modal.style.display = 'none';
+            editingFile = null;
+            document.getElementById('modalFileContent').value = '';
+        }, 200);
+    }
+
+    function saveFile() {
+        if (!editingFile) return;
+        const content = document.getElementById('modalFileContent').value;
+        fetch('/api/filemanager/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path: editingFile, content: content })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) alert(data.error);
+                else alert('File saved');
+                closeModal();
+                loadDirectory(currentPath);
+            })
+            .catch(err => {
+                console.error("Save error:", err);
+                alert("Error saving file: " + err);
+            });
+    }
+
+    function deleteItem(itemPath, isDir) {
+        if (!confirm(`Are you sure you want to delete ${isDir ? 'directory' : 'file'}?`)) return;
+        fetch('/api/filemanager/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path: itemPath, is_dir: isDir })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) alert(data.error);
+                else loadDirectory(currentPath);
+            })
+            .catch(err => alert("Delete error: " + err));
+    }
+
+    function createNewFile() {
+        const name = prompt('Enter file name:');
+        if (!name) return;
+        fetch('/api/filemanager/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path: currentPath, name: name, is_dir: false })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) alert(data.error);
+                else loadDirectory(currentPath);
+            });
+    }
+
+    function createNewFolder() {
+        const name = prompt('Enter folder name:');
+        if (!name) return;
+        fetch('/api/filemanager/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path: currentPath, name: name, is_dir: true })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) alert(data.error);
+                else loadDirectory(currentPath);
+            });
+    }
+
+    function uploadFile() {
+        document.getElementById('uploadFileInput').click();
+    }
+
+    function uploadFileHandler() {
+        const fileInput = document.getElementById('uploadFileInput');
+        const file = fileInput.files[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('path', currentPath);
+        fetch('/api/filemanager/upload', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) alert(data.error);
+                else loadDirectory(currentPath);
+                fileInput.value = '';
+            });
+    }
+
+    function goUp() {
+        if (!currentPath) return;
+        const parent = currentPath.substring(0, currentPath.lastIndexOf('/'));
+        if (parent && parent !== currentPath) loadDirectory(parent);
+        else loadDirectory(currentPath);
+    }
+
+    function resetBackdrop() {
+        cleanUpBackdrops();
+        closeModal();
+        console.log("Backdrop reset");
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Bind buttons
+    document.getElementById('refreshBtn').onclick = () => loadDirectory(currentPath);
+    document.getElementById('goUpBtn').onclick = goUp;
+    document.getElementById('newFileBtn').onclick = createNewFile;
+    document.getElementById('newFolderBtn').onclick = createNewFolder;
+    document.getElementById('uploadBtn').onclick = uploadFile;
+    document.getElementById('resetBackdropBtn').onclick = resetBackdrop;
+    document.getElementById('uploadFileInput').onchange = uploadFileHandler;
+
+    document.getElementById('saveModalBtn').onclick = saveFile;
+    document.getElementById('cancelModalBtn').onclick = closeModal;
+    document.getElementById('closeModalBtn').onclick = closeModal;
+
+    // Initial load
+    fetch('/api/filemanager/list')
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) alert(data.error);
+            else loadDirectory(data.path);
+        })
+        .catch(err => console.error("Initial load error:", err));
+</script>
+{% endblock %}

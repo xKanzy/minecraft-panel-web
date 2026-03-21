@@ -1,0 +1,10 @@
+{
+  "admin": {
+    "password_hash": "$2b$12$.ZDXBY/ybxJkIcy5ZsHf0eDkz6Pk1zYirwePC6yafxXqsjUUDd2Vm",
+    "is_admin": true
+  },
+  "xKanzy": {
+    "password_hash": "$2b$12$ThczESF25OCDOcOdw6juiOvRZ9sPs6SirT3UeMW7G2yhMb6AMmX.K",
+    "is_admin": false
+  }
+}

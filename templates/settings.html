@@ -3,7 +3,8 @@
 {% block content %}
 <h1>{{ _('Settings') }}</h1>
 
-<div class="card">
+<div class="card mb-4">
+    <div class="card-header">{{ _('Server Configuration') }}</div>
     <div class="card-body">
         <form id="settingsForm">
             <div class="mb-3">
@@ -26,12 +27,36 @@
                 <label for="max_backups" class="form-label">{{ _('Max Backups') }}</label>
                 <input type="number" class="form-control" id="max_backups" value="{{ config.MAX_BACKUPS }}">
             </div>
+            <div class="mb-3">
+                <label for="curseforge_api_key" class="form-label">{{ _('CurseForge API Key (optional)') }}</label>
+                <input type="text" class="form-control" id="curseforge_api_key" value="{{ config.CURSEFORGE_API_KEY }}">
+            </div>
             <button type="submit" class="btn btn-primary">{{ _('Save Changes') }}</button>
         </form>
     </div>
 </div>
 
+<div class="card">
+    <div class="card-header">{{ _('Change Password') }}</div>
+    <div class="card-body">
+        <div class="mb-3">
+            <label for="old_password" class="form-label">{{ _('Current Password') }}</label>
+            <input type="password" class="form-control" id="old_password">
+        </div>
+        <div class="mb-3">
+            <label for="new_password" class="form-label">{{ _('New Password') }}</label>
+            <input type="password" class="form-control" id="new_password">
+        </div>
+        <div class="mb-3">
+            <label for="confirm_password" class="form-label">{{ _('Confirm New Password') }}</label>
+            <input type="password" class="form-control" id="confirm_password">
+        </div>
+        <button id="changePasswordBtn" class="btn btn-warning">{{ _('Change Password') }}</button>
+    </div>
+</div>
+
 <script>
+    // Сохранение настроек сервера
     document.getElementById('settingsForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const data = {
@@ -39,11 +64,12 @@
             SERVER_JAR: document.getElementById('server_jar').value,
             JAVA_CMD: document.getElementById('java_cmd').value,
             JAVA_ARGS: document.getElementById('java_args').value,
-            MAX_BACKUPS: parseInt(document.getElementById('max_backups').value)
+            MAX_BACKUPS: parseInt(document.getElementById('max_backups').value),
+            CURSEFORGE_API_KEY: document.getElementById('curseforge_api_key').value
         };
         const res = await fetch('/api/settings', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
         if (res.ok) {
@@ -53,5 +79,31 @@
             alert('{{ _("Failed to save settings.") }}');
         }
     });
+
+    // Смена пароля
+    document.getElementById('changePasswordBtn').onclick = () => {
+        const old = document.getElementById('old_password').value;
+        const newpwd = document.getElementById('new_password').value;
+        const confirm = document.getElementById('confirm_password').value;
+        if (!old || !newpwd || newpwd !== confirm) {
+            alert('{{ _("Passwords do not match or empty") }}');
+            return;
+        }
+        fetch('/api/change_password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ old_password: old, new_password: newpwd })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) alert(data.error);
+            else {
+                alert('{{ _("Password changed successfully") }}');
+                document.getElementById('old_password').value = '';
+                document.getElementById('new_password').value = '';
+                document.getElementById('confirm_password').value = '';
+            }
+        });
+    };
 </script>
 {% endblock %}

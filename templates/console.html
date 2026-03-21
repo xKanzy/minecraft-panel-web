@@ -28,6 +28,8 @@
 
 <script>
     let lastLogSize = 0;
+    let eventSource = null;
+    let pollingInterval = null;
 
     function colorizeLine(line) {
         let className = 'log-default';
@@ -59,15 +61,46 @@
         logsDiv.scrollTop = logsDiv.scrollHeight;
     }
 
-    function fetchLogUpdates() {
-        fetch(`/api/logs/updates?size=${lastLogSize}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.lines && data.lines.length > 0) {
-                    appendNewLines(data.lines);
-                }
-                lastLogSize = data.size;
-            });
+    // Загружаем последние строки при старте
+    fetch('/api/logs?lines=50')
+        .then(res => res.json())
+        .then(data => {
+            appendNewLines(data.logs);
+            lastLogSize = data.logs.length;
+            connectSSE();
+        });
+
+    function connectSSE() {
+        if (eventSource) eventSource.close();
+        let url = `/api/logs/stream`;
+        if (lastLogSize) url += `?size=${lastLogSize}`;
+        eventSource = new EventSource(url);
+        eventSource.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.lines && data.lines.length > 0) {
+                appendNewLines(data.lines);
+            }
+        };
+        eventSource.onerror = (err) => {
+            console.error("EventSource failed", err);
+            eventSource.close();
+            eventSource = null;
+            startPolling();
+        };
+    }
+
+    function startPolling() {
+        if (pollingInterval) clearInterval(pollingInterval);
+        pollingInterval = setInterval(() => {
+            fetch(`/api/logs/updates?size=${lastLogSize}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.lines && data.lines.length > 0) {
+                        appendNewLines(data.lines);
+                    }
+                    lastLogSize = data.size;
+                });
+        }, 3000);
     }
 
     document.getElementById('sendCmd').onclick = () => {
@@ -81,22 +114,10 @@
             .then(data => {
                 if (data.status === 'sent') {
                     document.getElementById('commandInput').value = '';
-                    fetchLogUpdates();
                 } else {
                     alert('Error sending command');
                 }
             });
     };
-
-    // Инициализация: загружаем последние 50 строк
-    fetch('/api/logs?lines=50')
-        .then(res => res.json())
-        .then(data => {
-            appendNewLines(data.logs);
-            lastLogSize = data.logs.length; // приблизительный, потом обновится
-            fetchLogUpdates();
-        });
-
-    setInterval(fetchLogUpdates, 5000);
 </script>
 {% endblock %}

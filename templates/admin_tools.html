@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ _('Admin Tools') }}</h1>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">{{ _('Online Players') }}</div>
+            <div class="card-body">
+                <ul id="playerList" class="list-group">
+                    <li class="list-group-item">{{ _('Loading...') }}</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">{{ _('Actions') }}</div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="playerName" class="form-label">{{ _('Player Name') }}</label>
+                    <input type="text" id="playerName" class="form-control" placeholder="{{ _('Enter player name') }}">
+                </div>
+                <div class="btn-group-vertical w-100">
+                    <button id="kickBtn" class="btn btn-warning mb-2">{{ _('Kick') }}</button>
+                    <button id="banBtn" class="btn btn-danger mb-2">{{ _('Ban') }}</button>
+                    <button id="opBtn" class="btn btn-success mb-2">{{ _('Grant OP') }}</button>
+                    <button id="deopBtn" class="btn btn-secondary">{{ _('Remove OP') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">{{ _('Command History') }}</div>
+    <div class="card-body">
+        <div id="commandHistory" style="max-height: 200px; overflow-y: auto; background: #1e1e1e; font-family: monospace; padding: 10px;">
+            {{ _('Loading...') }}
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">{{ _('User Management') }}</div>
+    <div class="card-body">
+        <ul id="userList" class="list-group mb-3">
+            <li class="list-group-item">{{ _('Loading...') }}</li>
+        </ul>
+        <div class="input-group mb-3">
+            <input type="text" id="newUsername" class="form-control" placeholder="{{ _('New username') }}">
+            <input type="password" id="newPassword" class="form-control" placeholder="{{ _('Password') }}">
+            <button id="createUserBtn" class="btn btn-success">{{ _('Create User') }}</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Обновление списка игроков
+    function updatePlayers() {
+        fetch('/api/players')
+            .then(res => res.json())
+            .then(data => {
+                const list = document.getElementById('playerList');
+                list.innerHTML = '';
+                if (data.players.length === 0) {
+                    list.innerHTML = '<li class="list-group-item">{{ _("No players online.") }}</li>';
+                } else {
+                    data.players.forEach(player => {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item';
+                        li.textContent = player;
+                        list.appendChild(li);
+                    });
+                }
+            });
+    }
+
+    // Отправка команды игроку
+    function sendAction(action) {
+        const player = document.getElementById('playerName').value.trim();
+        if (!player) {
+            alert('{{ _("Enter a player name") }}');
+            return;
+        }
+        let command = '';
+        if (action === 'kick') command = `kick ${player}`;
+        else if (action === 'ban') command = `ban ${player}`;
+        else if (action === 'op') command = `op ${player}`;
+        else if (action === 'deop') command = `deop ${player}`;
+        fetch('/api/command', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ command: command })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'sent') {
+                    alert('{{ _("Command sent") }}');
+                    document.getElementById('playerName').value = '';
+                    updateCommandHistory();
+                } else {
+                    alert('{{ _("Error sending command") }}');
+                }
+            });
+    }
+
+    // История команд
+    function updateCommandHistory() {
+        fetch('/api/command_history')
+            .then(res => res.json())
+            .then(data => {
+                const historyDiv = document.getElementById('commandHistory');
+                historyDiv.innerHTML = data.history.map(entry => `<div>[${entry.timestamp}] > ${escapeHtml(entry.command)}</div>`).join('');
+                if (data.history.length === 0) historyDiv.innerHTML = '{{ _("No commands sent yet.") }}';
+            });
+    }
+
+    // Управление пользователями
+    function loadUsers() {
+        fetch('/api/users')
+            .then(res => res.json())
+            .then(data => {
+                const list = document.getElementById('userList');
+                list.innerHTML = '';
+                data.users.forEach(user => {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                    li.innerHTML = `
+                        <span>${escapeHtml(user.username)} ${user.is_admin ? '(Admin)' : ''}</span>
+                        <div>
+                            ${!user.is_admin ? `<button class="btn btn-sm btn-warning me-1" onclick="promoteUser('${user.username}')">{{ _('Make Admin') }}</button>` : ''}
+                            ${user.username !== 'admin' ? `<button class="btn btn-sm btn-danger" onclick="deleteUser('${user.username}')">{{ _('Delete') }}</button>` : ''}
+                        </div>
+                    `;
+                    list.appendChild(li);
+                });
+            });
+    }
+
+    function promoteUser(username) {
+        fetch('/api/users/promote', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username: username})
+        }).then(() => loadUsers());
+    }
+
+    function deleteUser(username) {
+        if (!confirm('Delete user ' + username + '?')) return;
+        fetch('/api/users/delete', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username: username})
+        }).then(() => loadUsers());
+    }
+
+    function createUser() {
+        const username = document.getElementById('newUsername').value;
+        const password = document.getElementById('newPassword').value;
+        if (!username || !password) {
+            alert('{{ _("Username and password required") }}');
+            return;
+        }
+        fetch('/api/users/create', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username: username, password: password})
+        }).then(res => res.json())
+          .then(data => {
+              if (data.error) alert(data.error);
+              else {
+                  document.getElementById('newUsername').value = '';
+                  document.getElementById('newPassword').value = '';
+                  loadUsers();
+              }
+          });
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    document.getElementById('kickBtn').onclick = () => sendAction('kick');
+    document.getElementById('banBtn').onclick = () => sendAction('ban');
+    document.getElementById('opBtn').onclick = () => sendAction('op');
+    document.getElementById('deopBtn').onclick = () => sendAction('deop');
+    document.getElementById('createUserBtn').onclick = createUser;
+
+    updatePlayers();
+    updateCommandHistory();
+    loadUsers();
+    setInterval(updatePlayers, 10000);
+    setInterval(updateCommandHistory, 5000);
+</script>
+{% endblock %}

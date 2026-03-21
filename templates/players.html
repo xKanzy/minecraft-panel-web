@@ -4,6 +4,10 @@
 <h1>{{ _('Online Players') }}</h1>
 <div class="card">
     <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">{{ _('Current players') }}</h5>
+            <button id="refreshPlayersBtn" class="btn btn-sm btn-primary">{{ _('Refresh Now') }}</button>
+        </div>
         <ul id="playersList" class="list-group">
             <li class="list-group-item">{{ _('Loading...') }}</li>
         </ul>
@@ -12,25 +16,45 @@
 
 <script>
     function updatePlayers() {
-        fetch('/api/players')
+        fetch('/api/status')
             .then(res => res.json())
-            .then(data => {
-                const list = document.getElementById('playersList');
-                list.innerHTML = '';
-                if (data.players.length === 0) {
-                    list.innerHTML = '<li class="list-group-item">{{ _("No players online.") }}</li>';
-                } else {
-                    data.players.forEach(player => {
-                        const li = document.createElement('li');
-                        li.className = 'list-group-item';
-                        li.textContent = player;
-                        list.appendChild(li);
-                    });
+            .then(status => {
+                if (!status.running) {
+                    const list = document.getElementById('playersList');
+                    list.innerHTML = '<li class="list-group-item text-muted">{{ _("Server is offline") }}</li>';
+                    return;
                 }
+                fetch('/api/players')
+                    .then(res => res.json())
+                    .then(data => {
+                        const list = document.getElementById('playersList');
+                        list.innerHTML = '';
+                        if (data.players.length === 0) {
+                            list.innerHTML = '<li class="list-group-item">{{ _("No players online.") }}</li>';
+                        } else {
+                            data.players.forEach(player => {
+                                const li = document.createElement('li');
+                                li.className = 'list-group-item';
+                                li.textContent = player;
+                                list.appendChild(li);
+                            });
+                        }
+                    });
             });
     }
 
+    function refreshPlayers() {
+        fetch('/api/command', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ command: 'list' })
+        }).then(() => {
+            setTimeout(updatePlayers, 1000);
+        });
+    }
+
+    document.getElementById('refreshPlayersBtn').onclick = refreshPlayers;
     updatePlayers();
-    setInterval(updatePlayers, 5000);
+    setInterval(updatePlayers, 10000);
 </script>
 {% endblock %}

@@ -5,17 +5,13 @@ import sys
 def get_config_path():
     """Возвращает путь к config.json в зависимости от ОС и способа запуска"""
     if getattr(sys, 'frozen', False):
-        # Бинарник: используем стандартные папки для конфигов
         if sys.platform == 'win32':
-            # Windows: %APPDATA%\MinecraftPanel\
             base = os.path.join(os.environ.get('APPDATA', os.path.expanduser('~')), 'MinecraftPanel')
         else:
-            # Linux/Mac: ~/.config/minecraft_panel/
             base = os.path.join(os.path.expanduser('~'), '.config', 'minecraft_panel')
         os.makedirs(base, exist_ok=True)
         return os.path.join(base, 'config.json')
     else:
-        # Режим разработки: конфиг в папке проекта
         return os.path.join(os.path.abspath('.'), 'config.json')
 
 CONFIG_FILE = get_config_path()
@@ -31,7 +27,9 @@ DEFAULT_CONFIG = {
     "PLUGINS_DIR": "",
     "STATS_FILE": "",
     "STATS_INTERVAL": 10,
-    "MAX_BACKUPS": 10
+    "MAX_BACKUPS": 10,
+    "CURSEFORGE_API_KEY": "",
+    "ADMIN_PASSWORD_HASH": ""
 }
 
 class Config:
@@ -48,12 +46,11 @@ class Config:
                 self.data = DEFAULT_CONFIG.copy()
         else:
             self.data = DEFAULT_CONFIG.copy()
-        
-        # Добавляем отсутствующие ключи
+
         for key, value in DEFAULT_CONFIG.items():
             if key not in self.data:
                 self.data[key] = value
-        
+
         self.update_derived_paths()
         self.save()
 
@@ -65,7 +62,6 @@ class Config:
             print(f"Warning: Could not save config: {e}")
 
     def update_derived_paths(self):
-        """Обновляет вычисляемые пути на основе SERVER_DIR"""
         if self.data["SERVER_DIR"] and os.path.isdir(self.data["SERVER_DIR"]):
             self.data["LOG_FILE"] = os.path.join(self.data["SERVER_DIR"], "logs", "latest.log")
             self.data["PID_FILE"] = os.path.join(self.data["SERVER_DIR"], "server.pid")
@@ -91,4 +87,5 @@ class Config:
     def is_configured(self):
         return bool(self.data.get("SERVER_DIR")) and os.path.isdir(self.data["SERVER_DIR"])
 
+# Создаём глобальный экземпляр для удобного импорта
 config = Config()
