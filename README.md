@@ -1,4 +1,4 @@
-# 🎮 Minecraft Server Panel
+# 🎮 Minecraft Server Panel Web
 
 ![GitHub License](https://img.shields.io/github/license/xKanzy/minecraft-panel-web?style=flat-square)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/xKanzy/minecraft-panel-web?style=flat-square)
