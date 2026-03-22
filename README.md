@@ -53,7 +53,7 @@
 
    * Discord Webhook — ссылка на вебхук вашего канала для получения отчетов.
 
-   * CurseForge API Key — ключ для поиска плагинов (можно получить на [console.curseforge.com]).
+   * CurseForge API Key — ключ для поиска плагинов (можно получить на [console.curseforge.com](https://console.curseforge.com/#/)).
     
 ---
 
