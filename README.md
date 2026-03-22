@@ -96,5 +96,5 @@ source venv/bin/activate  # Для Linux/Mac
 # или .\venv\Scripts\activate для Windows
 
 # Установите зависимости и запустите 
-pip install -r requirements.txt
+pip install flask flask-login bcrypt psutil requests
 python app.py
