@@ -3,7 +3,6 @@ import os
 import sys
 
 def get_config_path():
-    """Возвращает путь к config.json в зависимости от ОС и способа запуска"""
     if getattr(sys, 'frozen', False):
         if sys.platform == 'win32':
             base = os.path.join(os.environ.get('APPDATA', os.path.expanduser('~')), 'MinecraftPanel')
@@ -29,7 +28,9 @@ DEFAULT_CONFIG = {
     "STATS_INTERVAL": 10,
     "MAX_BACKUPS": 10,
     "CURSEFORGE_API_KEY": "",
-    "ADMIN_PASSWORD_HASH": ""
+    "DISCORD_WEBHOOK_URL": "",
+    "DISCORD_STATUS_INTERVAL": 0,
+    "DISCORD_NOTIFY_JOIN_LEAVE": True
 }
 
 class Config:
@@ -87,5 +88,4 @@ class Config:
     def is_configured(self):
         return bool(self.data.get("SERVER_DIR")) and os.path.isdir(self.data["SERVER_DIR"])
 
-# Создаём глобальный экземпляр для удобного импорта
 config = Config()

@@ -1,5 +1,4 @@
 import os
-import sys
 from werkzeug.utils import secure_filename
 from config_manager import config
 
@@ -7,10 +6,7 @@ class PluginManager:
     def __init__(self):
         self.plugins_dir = config.get('PLUGINS_DIR')
         if self.plugins_dir:
-            try:
-                os.makedirs(self.plugins_dir, exist_ok=True)
-            except:
-                pass
+            os.makedirs(self.plugins_dir, exist_ok=True)
 
     def list_plugins(self):
         if not self.plugins_dir or not os.path.exists(self.plugins_dir):

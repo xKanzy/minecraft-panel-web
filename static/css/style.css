@@ -23,7 +23,7 @@
 body {
     background: linear-gradient(135deg, var(--darker) 0%, var(--dark) 100%);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-    color: var(--light);
+    color: #f0f0f0 !important;
     min-height: 100vh;
     position: relative;
 }
@@ -48,6 +48,7 @@ body::before {
     z-index: 1;
 }
 
+/* ===== Навбар ===== */
 .navbar {
     background: rgba(15, 15, 26, 0.95) !important;
     backdrop-filter: blur(12px);
@@ -78,7 +79,7 @@ body::before {
 }
 
 .nav-link {
-    color: var(--light) !important;
+    color: #f0f0f0 !important;
     font-weight: 500;
     padding: 0.5rem 1rem !important;
     margin: 0 0.25rem;
@@ -97,73 +98,36 @@ body::before {
     color: var(--primary-light) !important;
 }
 
-/* Выпадающее меню */
-.dropdown-menu {
-    z-index: 999999 !important;
-    position: absolute !important;
+/* ===== Выпадающее меню (кастомное, если используется) ===== */
+.custom-dropdown-menu {
     background: rgba(26, 26, 46, 0.98) !important;
     backdrop-filter: blur(12px);
     border: 1px solid rgba(76, 175, 80, 0.5);
     border-radius: 12px;
+    padding: 0.5rem 0;
+    min-width: 200px;
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
-    margin-top: 0.5rem !important;
-    animation: fadeIn 0.2s ease-out;
-    overflow: visible !important;
-    max-width: 90vw;
+    display: none;
+    z-index: 9999999 !important;
 }
 
-.dropdown-item {
+.custom-dropdown-menu .dropdown-item {
     color: #f0f0f0 !important;
     padding: 0.6rem 1.5rem !important;
-    transition: all 0.2s ease;
-    white-space: nowrap;
+    background: transparent !important;
 }
 
-.dropdown-item:hover,
-.dropdown-item:focus {
+.custom-dropdown-menu .dropdown-item:hover {
     background: rgba(76, 175, 80, 0.2) !important;
     color: #7cdf4c !important;
 }
 
-.dropdown-item.active {
-    background: rgba(76, 175, 80, 0.3) !important;
-    color: #7cdf4c !important;
-}
-
-.dropdown-divider {
+.custom-dropdown-menu .dropdown-divider {
     border-top: 1px solid rgba(76, 175, 80, 0.3);
     margin: 0.5rem 0;
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.dropdown-toggle::after {
-    transition: transform 0.2s ease;
-}
-
-.dropdown.show .dropdown-toggle::after {
-    transform: rotate(180deg);
-}
-
-.navbar,
-.navbar-collapse,
-.collapse,
-.navbar-nav,
-.dropdown {
-    overflow: visible !important;
-    z-index: auto !important;
-}
-
-/* Карточки */
+/* ===== КАРТОЧКИ ===== */
 .card {
     background: rgba(26, 26, 46, 0.7);
     backdrop-filter: blur(10px);
@@ -172,6 +136,7 @@ body::before {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
     transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
     overflow: hidden;
+    color: #f0f0f0 !important;
 }
 
 .card:hover {
@@ -188,24 +153,24 @@ body::before {
     padding: 1rem 1.5rem;
     border-radius: 20px 20px 0 0 !important;
     letter-spacing: -0.2px;
-    color: var(--light);
+    color: #f0f0f0 !important;
 }
 
 .card-body {
     padding: 1.5rem;
-    color: var(--light);
+    color: #f0f0f0 !important;
 }
 
 .card-title {
-    color: var(--primary-light);
+    color: var(--primary-light) !important;
     font-weight: 700;
 }
 
 .card-text {
-    color: var(--light);
+    color: #f0f0f0 !important;
 }
 
-/* Кнопки */
+/* ===== КНОПКИ ===== */
 .btn {
     border-radius: 12px;
     font-weight: 600;
@@ -238,7 +203,7 @@ body::before {
 .btn-warning {
     background: linear-gradient(135deg, var(--warning), #f57c00);
     border: none;
-    color: var(--dark) !important;
+    color: #000 !important;
 }
 
 .btn-primary {
@@ -251,11 +216,11 @@ body::before {
     font-size: 0.75rem;
 }
 
-/* Поля ввода */
+/* ===== ПОЛЯ ВВОДА ===== */
 .form-control {
     background: rgba(0, 0, 0, 0.5) !important;
     border: 1px solid rgba(76, 175, 80, 0.3) !important;
-    color: var(--light) !important;
+    color: #f0f0f0 !important;
     border-radius: 12px;
     transition: all 0.2s ease;
     padding: 0.6rem 1rem;
@@ -265,7 +230,7 @@ body::before {
     background: rgba(0, 0, 0, 0.7) !important;
     border-color: var(--primary) !important;
     box-shadow: 0 0 0 0.2rem rgba(76, 175, 80, 0.25) !important;
-    color: var(--light) !important;
+    color: #f0f0f0 !important;
     outline: none;
 }
 
@@ -274,15 +239,15 @@ body::before {
 }
 
 .form-label {
-    color: var(--light);
+    color: #f0f0f0 !important;
     font-weight: 500;
 }
 
 .form-text {
-    color: #aaa;
+    color: #bbb !important;
 }
 
-/* Списки */
+/* ===== СПИСКИ ===== */
 .list-group {
     background: transparent;
 }
@@ -291,7 +256,7 @@ body::before {
     background: rgba(0, 0, 0, 0.4);
     border: none;
     border-bottom: 1px solid rgba(76, 175, 80, 0.2);
-    color: var(--light);
+    color: #f0f0f0 !important;
     padding: 0.75rem 1rem;
 }
 
@@ -299,7 +264,7 @@ body::before {
     border-bottom: none;
 }
 
-/* Логи */
+/* ===== ЛОГИ ===== */
 #miniLogs, #logs {
     background: rgba(0, 0, 0, 0.7) !important;
     border-radius: 16px;
@@ -307,10 +272,9 @@ body::before {
     font-size: 0.85rem;
     line-height: 1.5;
     padding: 1rem;
-    color: var(--light);
+    color: #f0f0f0 !important;
 }
 
-/* Цвета логов */
 .log-info { color: #9cdcfe; }
 .log-success { color: #4ec9b0; }
 .log-warning { color: #dcdcaa; }
@@ -318,11 +282,11 @@ body::before {
 .log-command { color: #c586c0; font-weight: bold; }
 .log-default { color: #d4d4d4; }
 
-/* Переключатель языка */
+/* ===== ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА ===== */
 .language-switcher .btn {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(76, 175, 80, 0.5);
-    color: var(--light);
+    color: #f0f0f0;
     border-radius: 20px;
     padding: 0.3rem 1rem;
     font-size: 0.8rem;
@@ -337,35 +301,36 @@ body::before {
     color: white;
 }
 
-/* Статус сервера */
+/* ===== СТАТУС СЕРВЕРА ===== */
 .alert {
     border-radius: 12px;
     border: none;
     background: rgba(0,0,0,0.6);
     backdrop-filter: blur(4px);
     padding: 1rem;
+    color: #f0f0f0 !important;
 }
 
 .alert-success {
     background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.05));
     border-left: 4px solid var(--primary);
-    color: var(--primary-light);
+    color: var(--primary-light) !important;
 }
 
 .alert-secondary {
     background: linear-gradient(135deg, rgba(136, 136, 136, 0.2), rgba(136, 136, 136, 0.05));
     border-left: 4px solid var(--gray);
-    color: var(--light);
+    color: #f0f0f0 !important;
 }
 
-/* Футер */
+/* ===== ФУТЕР ===== */
 footer {
     margin-top: 3rem;
     padding: 1rem;
     text-align: center;
     border-top: 1px solid rgba(76, 175, 80, 0.2);
     font-size: 0.8rem;
-    color: #aaa;
+    color: #aaa !important;
 }
 
 footer a {
@@ -379,7 +344,7 @@ footer a:hover {
     text-decoration: underline;
 }
 
-/* Скроллбар */
+/* ===== СКРОЛЛБАР ===== */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -399,7 +364,7 @@ footer a:hover {
     background: var(--primary-dark);
 }
 
-/* Анимация загрузки */
+/* ===== АНИМАЦИЯ ЗАГРУЗКИ ===== */
 @keyframes pulse {
     0% { opacity: 0.6; transform: scale(1); }
     100% { opacity: 1; transform: scale(1.02); }
@@ -409,7 +374,7 @@ footer a:hover {
     animation: pulse 1s infinite;
 }
 
-/* Карточки плагинов */
+/* ===== КАРТОЧКИ ПЛАГИНОВ ===== */
 #results .card {
     background: rgba(35, 35, 45, 0.95) !important;
     backdrop-filter: blur(4px);
@@ -445,12 +410,12 @@ footer a:hover {
     color: #b0b0b0 !important;
 }
 
-/* Системные ресурсы на дашборде */
+/* ===== СИСТЕМНЫЕ РЕСУРСЫ ===== */
 #systemStats p {
-    color: var(--light);
+    color: #f0f0f0 !important;
 }
 
-/* Кастомное модальное окно */
+/* ===== КАСТОМНОЕ МОДАЛЬНОЕ ОКНО ===== */
 #customModal {
     background: rgba(0, 0, 0, 0.5);
 }
@@ -466,3 +431,31 @@ footer a:hover {
 #customModal button.close {
     color: #fff;
 }
+
+/* ===== ДОПОЛНИТЕЛЬНАЯ ГАРАНТИЯ ДЛЯ ВСЕХ ЭЛЕМЕНТОВ ===== */
+body, body * {
+    color: #f0f0f0 !important;
+}
+/* Возвращаем цвета для кнопок и ссылок, чтобы не потерять стили */
+.btn, .btn * {
+    color: #fff !important;
+}
+.btn-warning, .btn-warning * {
+    color: #000 !important;
+}
+a {
+    color: #7cdf4c !important;
+}
+a:hover {
+    color: #4caf50 !important;
+}
+/* Цвета логов (они должны оставаться цветными) */
+.log-info, .log-success, .log-warning, .log-error, .log-command, .log-default {
+    color: inherit !important;
+}
+.log-info { color: #9cdcfe !important; }
+.log-success { color: #4ec9b0 !important; }
+.log-warning { color: #dcdcaa !important; }
+.log-error { color: #f48771 !important; }
+.log-command { color: #c586c0 !important; }
+.log-default { color: #d4d4d4 !important; }

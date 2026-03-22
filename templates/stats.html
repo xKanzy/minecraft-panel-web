@@ -48,7 +48,6 @@
         fetch('/api/stats')
             .then(res => res.json())
             .then(data => {
-                // data is array of {timestamp, cpu, ram}
                 const timestamps = data.map(p => new Date(p.timestamp * 1000).toLocaleTimeString());
                 const cpuData = data.map(p => p.cpu);
                 const ramData = data.map(p => p.ram);

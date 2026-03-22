@@ -92,7 +92,6 @@
         logsDiv.scrollTop = logsDiv.scrollHeight;
     }
 
-    // Загружаем последние строки при старте
     fetch('/api/logs?lines=15')
         .then(res => res.json())
         .then(data => {
@@ -134,7 +133,6 @@
         }, 3000);
     }
 
-    // --- Остальные функции дашборда ---
     function updateStatus() {
         fetch('/api/status')
             .then(res => res.json())
@@ -151,7 +149,6 @@
     }
 
     function updatePlayers() {
-        // Сначала проверяем статус сервера
         fetch('/api/status')
             .then(res => res.json())
             .then(status => {
@@ -160,7 +157,6 @@
                     list.innerHTML = '<li class="list-group-item text-muted">{{ _("Server is offline") }}</li>';
                     return;
                 }
-                // Сервер запущен – запрашиваем игроков
                 fetch('/api/players')
                     .then(res => res.json())
                     .then(data => {

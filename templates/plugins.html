@@ -45,6 +45,7 @@
         </div>
     </div>
 </div>
+
 <footer class="mt-5 text-center text-muted">
     <small>
         {{ _('Powered by') }} <a href="https://modrinth.com" target="_blank">Modrinth API</a> & <a href="https://www.curseforge.com" target="_blank">CurseForge API</a>
@@ -52,9 +53,8 @@
 </footer>
 
 <script>
-    let installedProjects = [];   // содержит id как с Modrinth, так и с CurseForge (с префиксом cf_)
+    let installedProjects = [];
 
-    // ----- Installed Plugins -----
     function loadPlugins() {
         fetch('/api/plugins')
             .then(res => res.json())
@@ -104,7 +104,6 @@
             });
     };
 
-    // ----- Modrinth + CurseForge -----
     function loadInstalled() {
         return fetch('/api/modrinth/installed')
             .then(res => res.json())
@@ -133,8 +132,7 @@
                 }
                 let html = '';
                 for (const plugin of data.results) {
-                    const isInstalled = installedProjects.includes(plugin.id) ||
-                                        installedProjects.includes(`cf_${plugin.id}`);
+                    const isInstalled = installedProjects.includes(plugin.id);
                     const iconHtml = plugin.icon_url
                         ? `<img src="${plugin.icon_url}" alt="${plugin.title}" style="width:48px; height:48px; object-fit:cover; border-radius:8px;" class="me-3">`
                         : '<div class="me-3" style="width:48px; height:48px; background:#6c757d; border-radius:8px;"></div>';
@@ -207,7 +205,6 @@
         return div.innerHTML;
     }
 
-    // Initial load
     loadPlugins();
     loadInstalled().then(() => {
         const savedQuery = localStorage.getItem('modrinth_last_query');

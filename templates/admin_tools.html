@@ -57,7 +57,6 @@
 </div>
 
 <script>
-    // Обновление списка игроков
     function updatePlayers() {
         fetch('/api/players')
             .then(res => res.json())
@@ -77,7 +76,6 @@
             });
     }
 
-    // Отправка команды игроку
     function sendAction(action) {
         const player = document.getElementById('playerName').value.trim();
         if (!player) {
@@ -91,7 +89,7 @@
         else if (action === 'deop') command = `deop ${player}`;
         fetch('/api/command', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ command: command })
         })
             .then(res => res.json())
@@ -106,7 +104,6 @@
             });
     }
 
-    // История команд
     function updateCommandHistory() {
         fetch('/api/command_history')
             .then(res => res.json())
@@ -117,7 +114,6 @@
             });
     }
 
-    // Управление пользователями
     function loadUsers() {
         fetch('/api/users')
             .then(res => res.json())

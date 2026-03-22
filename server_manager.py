@@ -56,7 +56,7 @@ class MinecraftServerManager:
             return "Server directory not configured or does not exist."
         os.chdir(server_dir)
         stdout_path = os.path.join(server_dir, "server_stdout.log")
-        # Очищаем файл, не удаляя его (чтобы SSE-поток не потерял соединение)
+        # Очищаем файл, не удаляя его
         try:
             with open(stdout_path, 'w') as f:
                 pass
@@ -164,7 +164,6 @@ class MinecraftServerManager:
             return [], 0
 
     def get_players(self):
-        """Возвращает список онлайн-игроков, анализируя лог-файлы."""
         players = set()
         log_files = [
             config.get('LOG_FILE'),
@@ -178,8 +177,6 @@ class MinecraftServerManager:
                 with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
                     for line in f:
                         line = strip_color.sub('', line)
-
-                        # 1. Вход игрока (logged in / joined)
                         if "logged in" in line:
                             match = re.search(r'\s([\w_]+)\[/', line)
                             if match:
@@ -188,30 +185,20 @@ class MinecraftServerManager:
                             parts = line.split()
                             for i, part in enumerate(parts):
                                 if part == "joined" and i > 0:
-                                    name = parts[i-1].strip()
-                                    if name:
-                                        players.add(name)
+                                    players.add(parts[i-1])
                                     break
-
-                        # 2. Выход игрока
                         elif "left the game" in line or "disconnected" in line:
                             parts = line.split()
                             for i, part in enumerate(parts):
-                                if part == "left" or part == "disconnected":
+                                if part in ("left", "disconnected"):
                                     if i > 0:
-                                        name = parts[i-1].strip()
-                                        if name:
-                                            players.discard(name)
+                                        players.discard(parts[i-1])
                                     break
-
-                        # 3. Команда /list
                         elif "players online:" in line:
                             if ": " in line:
                                 after = line.split(": ", 1)[1]
-                                # Пропускаем строки без имён (например, "There are 0/20 players online:")
                                 if after.strip().startswith("There are"):
                                     continue
-                                # Извлекаем имена
                                 for name in after.split(","):
                                     name = name.strip()
                                     if name and not name.isdigit() and "players online" not in name:

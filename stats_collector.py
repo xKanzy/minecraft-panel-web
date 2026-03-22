@@ -6,12 +6,7 @@ import os
 import sys
 from config_manager import config
 
-def get_stats_path():
-    """Возвращает путь для сохранения статистики"""
-    stats_file = config.get('STATS_FILE')
-    if stats_file:
-        return stats_file
-    # Fallback: сохраняем в папку с программой
+def fallback_path():
     if getattr(sys, 'frozen', False):
         base = os.path.dirname(sys.executable)
     else:
@@ -20,31 +15,49 @@ def get_stats_path():
 
 class StatsCollector:
     def __init__(self):
-        self.stats_file = get_stats_path()
+        self.stats_file = config.get('STATS_FILE')
         self.interval = config.get('STATS_INTERVAL')
         self.running = False
         self.thread = None
         self.stats = []
+        self.fallback = False
         self.load_stats()
         self.start_collection()
 
     def load_stats(self):
-        if os.path.exists(self.stats_file):
+        if self.stats_file and os.path.exists(self.stats_file):
             try:
                 with open(self.stats_file, 'r') as f:
                     self.stats = json.load(f)
+                return
+            except:
+                pass
+        fall = fallback_path()
+        if os.path.exists(fall):
+            try:
+                with open(fall, 'r') as f:
+                    self.stats = json.load(f)
+                self.fallback = True
             except:
                 self.stats = []
         if len(self.stats) > 1000:
             self.stats = self.stats[-1000:]
 
     def save_stats(self):
+        target = fallback_path() if self.fallback else self.stats_file
+        if not target:
+            return
         try:
-            with open(self.stats_file, 'w') as f:
+            with open(target, 'w') as f:
                 json.dump(self.stats[-500:], f)
-        except Exception as e:
-            # Если не можем сохранить, просто игнорируем
-            pass
+        except PermissionError:
+            if not self.fallback and self.stats_file:
+                self.fallback = True
+                try:
+                    with open(fallback_path(), 'w') as f:
+                        json.dump(self.stats[-500:], f)
+                except:
+                    pass
 
     def collect(self):
         cpu = psutil.cpu_percent(interval=0.1)
@@ -65,10 +78,7 @@ class StatsCollector:
 
     def _run(self):
         while self.running:
-            try:
-                self.collect()
-            except:
-                pass
+            self.collect()
             time.sleep(self.interval)
 
     def stop_collection(self):

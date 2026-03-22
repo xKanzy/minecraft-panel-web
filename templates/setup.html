@@ -7,6 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
             font-family: 'Inter', sans-serif;
@@ -17,25 +18,17 @@
             padding: 2rem;
         }
         .setup-card {
-            background: rgba(30, 30, 46, 0.9);
+            background: rgba(30, 30, 46, 0.95);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(76, 175, 80, 0.3);
             border-radius: 32px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-            max-width: 600px;
+            max-width: 800px;
             width: 100%;
+            margin: 0 auto;
             animation: fadeInUp 0.5s ease;
         }
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         .setup-header {
             background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(0, 0, 0, 0.3));
             border-radius: 32px 32px 0 0;
@@ -43,88 +36,29 @@
             text-align: center;
             border-bottom: 1px solid rgba(76, 175, 80, 0.3);
         }
-        .setup-header h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #7cdf4c, #4caf50);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            margin-bottom: 0.5rem;
-        }
-        .setup-header p {
-            color: #aaa;
-            margin-bottom: 0;
-        }
-        .setup-body {
-            padding: 2rem;
-        }
-        .form-label {
-            font-weight: 500;
-            color: #ddd;
-        }
-        .form-control {
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(76, 175, 80, 0.3);
-            color: #fff !important;
-            border-radius: 12px;
-            padding: 0.75rem 1rem;
-            transition: all 0.2s;
-        }
-        .form-control:focus {
-            background: rgba(0, 0, 0, 0.7);
-            border-color: #4caf50;
-            box-shadow: 0 0 0 0.2rem rgba(76, 175, 80, 0.25);
-            color: #fff;
-        }
-        .form-control::placeholder {
-            color: #888;
-        }
-        .form-text {
-            color: #888;
-            font-size: 0.8rem;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #4caf50, #2e7d32);
-            border: none;
-            border-radius: 12px;
-            padding: 0.75rem;
-            font-weight: 600;
-            width: 100%;
-            transition: all 0.2s;
-            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
-        }
-        .alert {
-            border-radius: 12px;
-            background: rgba(244, 67, 54, 0.2);
-            border: 1px solid rgba(244, 67, 54, 0.5);
-            color: #ff8a7a;
-        }
-        .language-switch {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            display: flex;
-            gap: 0.5rem;
-        }
-        .lang-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(76, 175, 80, 0.5);
-            color: #fff;
-            border-radius: 20px;
-            padding: 0.25rem 1rem;
-            text-decoration: none;
-            font-size: 0.8rem;
-            transition: all 0.2s;
-        }
-        .lang-btn:hover {
-            background: #4caf50;
-            border-color: #4caf50;
-        }
+        .setup-header h1 { font-size: 2rem; font-weight: 700; background: linear-gradient(135deg, #7cdf4c, #4caf50); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 0.5rem; }
+        .setup-header p { color: #aaa; margin-bottom: 0; }
+        .setup-body { padding: 2rem; }
+        .nav-tabs .nav-link { color: #aaa; background: transparent; border: none; padding: 0.5rem 1rem; }
+        .nav-tabs .nav-link.active { color: #7cdf4c; border-bottom: 2px solid #4caf50; background: transparent; }
+        .tab-content { margin-top: 1.5rem; }
+        .form-label { color: #f0f0f0 !important; font-weight: 500; }
+        .form-control { background: rgba(0, 0, 0, 0.6) !important; border: 1px solid rgba(76, 175, 80, 0.4) !important; color: #ffffff !important; border-radius: 12px; padding: 0.75rem 1rem; }
+        .form-control:focus { background: rgba(0, 0, 0, 0.8) !important; border-color: #4caf50 !important; box-shadow: 0 0 0 0.2rem rgba(76, 175, 80, 0.25) !important; }
+        .form-text { color: #bbb !important; font-size: 0.8rem; }
+        .btn-primary { background: linear-gradient(135deg, #4caf50, #2e7d32); border: none; border-radius: 12px; padding: 0.75rem; font-weight: 600; width: 100%; transition: all 0.2s; color: #fff !important; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4); }
+        .alert { border-radius: 12px; background: rgba(244, 67, 54, 0.2); border: 1px solid rgba(244, 67, 54, 0.5); color: #ff8a7a; }
+        .language-switch { position: absolute; top: 1rem; right: 1rem; display: flex; gap: 0.5rem; z-index: 10; }
+        .lang-btn { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(76, 175, 80, 0.5); color: #fff; border-radius: 20px; padding: 0.25rem 1rem; text-decoration: none; font-size: 0.8rem; }
+        .lang-btn:hover { background: #4caf50; border-color: #4caf50; }
+        .guide-step { margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(76, 175, 80, 0.2); }
+        .guide-step h5 { color: #7cdf4c !important; }
+        .guide-step p, .guide-step li, .guide-step span { color: #f0f0f0 !important; }
+        .code-block { background: #0f0f1a; padding: 0.75rem; border-radius: 8px; font-family: monospace; margin: 0.5rem 0; overflow-x: auto; color: #d4d4d4 !important; border: 1px solid #2e7d32; }
+        .download-links a { color: #7cdf4c !important; text-decoration: none; margin-right: 1rem; }
+        .download-links a:hover { text-decoration: underline; }
+        .alert-info { background: rgba(33, 150, 243, 0.2); border-color: #2196f3; color: #b3e5fc !important; }
     </style>
 </head>
 <body>
@@ -138,39 +72,53 @@
             <p>{{ _('Configure your Minecraft server') }}</p>
         </div>
         <div class="setup-body">
-            {% if error %}
-            <div class="alert alert-danger mb-4">{{ error }}</div>
-            {% endif %}
-            <form method="POST">
-                <div class="mb-3">
-                    <label for="server_dir" class="form-label">{{ _('Server Directory (absolute path)') }}</label>
-                    <input type="text" class="form-control" id="server_dir" name="server_dir" required
-                           placeholder="/home/user/minecraft_server">
-                    <div class="form-text">{{ _('Path to the folder containing server.jar') }}</div>
+            <ul class="nav nav-tabs" id="setupTabs" role="tablist">
+                <li class="nav-item"><button class="nav-link active" id="config-tab" data-bs-toggle="tab" data-bs-target="#config" type="button">{{ _('Configure Existing Server') }}</button></li>
+                <li class="nav-item"><button class="nav-link" id="guide-tab" data-bs-toggle="tab" data-bs-target="#guide" type="button">{{ _('Create a New Server (Manual)') }}</button></li>
+            </ul>
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="config">
+                    <form method="POST">
+                        <div class="mb-3"><label for="server_dir" class="form-label">{{ _('Server Directory (absolute path)') }}</label><input type="text" class="form-control" id="server_dir" name="server_dir" required placeholder="/home/user/minecraft_server"><div class="form-text">{{ _('Path to the folder containing server.jar') }}</div></div>
+                        <div class="mb-3"><label for="server_jar" class="form-label">{{ _('Server JAR filename') }}</label><input type="text" class="form-control" id="server_jar" name="server_jar" value="server.jar"></div>
+                        <div class="mb-3"><label for="java_cmd" class="form-label">{{ _('Java command') }}</label><input type="text" class="form-control" id="java_cmd" name="java_cmd" value="java"></div>
+                        <div class="mb-3"><label for="java_args" class="form-label">{{ _('Java arguments') }}</label><input type="text" class="form-control" id="java_args" name="java_args" value="-Xmx1024M -Xms1024M -jar server.jar nogui"></div>
+                        <div class="mb-3"><label for="max_backups" class="form-label">{{ _('Max backups to keep') }}</label><input type="number" class="form-control" id="max_backups" name="max_backups" value="10"></div>
+                        <button type="submit" class="btn btn-primary">{{ _('Save and Continue') }}</button>
+                    </form>
+                    {% if error %}<div class="alert alert-danger mt-3">{{ error }}</div>{% endif %}
                 </div>
-                <div class="mb-3">
-                    <label for="server_jar" class="form-label">{{ _('Server JAR filename') }}</label>
-                    <input type="text" class="form-control" id="server_jar" name="server_jar" value="server.jar">
-                    <div class="form-text">{{ _('The name of your server .jar file') }}</div>
+                <div class="tab-pane fade" id="guide">
+                    <div class="guide-step">
+                        <h5>1. {{ _('Choose a server core') }}</h5>
+                        <p>{{ _('Select the type of server you want to run. Popular choices:') }}</p>
+                        <div class="download-links"><a href="https://papermc.io/downloads" target="_blank">Paper (recommended)</a><a href="https://www.minecraft.net/en-us/download/server" target="_blank">Vanilla</a><a href="https://getbukkit.org/" target="_blank">Spigot / Bukkit</a><a href="https://mohistmc.com/" target="_blank">Mohist (Forge + Paper)</a></div>
+                        <p class="mt-2">{{ _('Download the latest stable server JAR and place it in an empty folder.') }}</p>
+                    </div>
+                    <div class="guide-step">
+                        <h5>2. {{ _('Accept the EULA') }}</h5>
+                        <p>{{ _('Create a file named') }} <code>eula.txt</code> {{ _('in the server folder with the following content:') }}</p>
+                        <div class="code-block">eula=true</div>
+                    </div>
+                    <div class="guide-step">
+                        <h5>3. {{ _('Configure server properties (optional)') }}</h5>
+                        <p>{{ _('You can edit') }} <code>server.properties</code> {{ _('later. Basic settings:') }}</p>
+                        <div class="code-block">server-port=25565<br>online-mode=true<br>max-players=20</div>
+                    </div>
+                    <div class="guide-step">
+                        <h5>4. {{ _('Set up the panel') }}</h5>
+                        <p>{{ _('Now switch to the "Configure Existing Server" tab above, enter the path to this folder, and click "Save and Continue".') }}</p>
+                        <p class="mt-1">{{ _('If you prefer to test the server first, you can run it once:') }}</p>
+                        <div class="code-block">java -Xmx1024M -Xms1024M -jar server.jar nogui</div>
+                        <p class="mt-1">{{ _('Wait for the world to generate, then stop it by typing') }} <code>stop</code> {{ _('in console.') }}</p>
+                    </div>
+                    <div class="guide-step">
+                        <h5>{{ _('Additional note for non-premium accounts') }}</h5>
+                        <p>{{ _('If you are using a non-premium Minecraft account, set') }} <code>online-mode=false</code> {{ _('to') }} <code>server.properties</code> {{ _('in server.properties.') }}</p>
+                    </div>
+                    <div class="alert alert-info mt-3">{{ _('Need more help? Check the official documentation or ask in community forums.') }}</div>
                 </div>
-                <div class="mb-3">
-                    <label for="java_cmd" class="form-label">{{ _('Java command') }}</label>
-                    <input type="text" class="form-control" id="java_cmd" name="java_cmd" value="java">
-                    <div class="form-text">{{ _('Usually "java" or "java17" for newer versions') }}</div>
-                </div>
-                <div class="mb-3">
-                    <label for="java_args" class="form-label">{{ _('Java arguments') }}</label>
-                    <input type="text" class="form-control" id="java_args" name="java_args"
-                           value="-Xmx1024M -Xms1024M -jar server.jar nogui">
-                    <div class="form-text">{{ _('Separate arguments with spaces') }}</div>
-                </div>
-                <div class="mb-3">
-                    <label for="max_backups" class="form-label">{{ _('Max backups to keep') }}</label>
-                    <input type="number" class="form-control" id="max_backups" name="max_backups" value="10">
-                    <div class="form-text">{{ _('Older backups will be automatically deleted') }}</div>
-                </div>
-                <button type="submit" class="btn btn-primary">{{ _('Save and Continue') }}</button>
-            </form>
+            </div>
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>

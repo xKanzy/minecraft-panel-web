@@ -6,10 +6,10 @@ import time
 import threading
 import datetime
 import secrets
+import re
 import psutil
 import requests
 import bcrypt
-import socket
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, Response
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
@@ -96,7 +96,6 @@ def set_admin_status(username, is_admin):
     return False
 
 def migrate_admin_from_config():
-    """Переносит пароль администратора из config.json в users.json, если он там есть."""
     users = load_users()
     if users:
         return
@@ -134,6 +133,7 @@ def load_user(user_id):
         return User(user_id, users[user_id].get('is_admin', False))
     return None
 
+# ------------------- Декоратор администратора -------------------
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -219,7 +219,7 @@ def console():
 @login_required
 @require_config
 def players():
-    return render_template('players.html')
+    return render_template('players.html', is_admin=current_user.is_admin)
 
 @app.route('/plugins')
 @login_required
@@ -294,6 +294,7 @@ def api_system_stats():
 @require_config
 def api_start():
     result = server_manager.start()
+    send_discord_notification(f"**Сервер {'запущен' if result == 'Server started.' else 'остановлен'}**\nПользователь: {current_user.username}", color=0x4caf50 if 'started' in result else 0xf44336, title="Server Status")
     return jsonify({'message': result})
 
 @app.route('/api/stop', methods=['POST'])
@@ -301,6 +302,7 @@ def api_start():
 @require_config
 def api_stop():
     result = server_manager.stop()
+    send_discord_notification(f"**Сервер {'запущен' if result == 'Server started.' else 'остановлен'}**\nПользователь: {current_user.username}", color=0x4caf50 if 'started' in result else 0xf44336, title="Server Status")
     return jsonify({'message': result})
 
 @app.route('/api/reset_status', methods=['POST'])
@@ -338,6 +340,7 @@ def api_command():
     if cmd:
         server_manager.send_command(cmd)
         log_command(cmd)
+        send_discord_notification(f"**Команда отправлена**\nПользователь: {current_user.username}\nКоманда: `{cmd}`", color=0x2196f3, title="Command Sent")
         return jsonify({'status': 'sent'})
     return jsonify({'error': 'No command'}), 400
 
@@ -413,8 +416,12 @@ def api_logs_stream():
 @login_required
 @require_config
 def api_players():
-    players = server_manager.get_players()
-    return jsonify({'players': players})
+    try:
+        players = server_manager.get_players()
+        return jsonify({'players': players})
+    except Exception as e:
+        app.logger.error(f"Players API error: {e}")
+        return jsonify({'players': [], 'error': str(e)}), 500
 
 # ------------------- API для плагинов (Modrinth + CurseForge) -------------------
 MODRINTH_INSTALLED_FILE = None
@@ -731,6 +738,174 @@ def api_mods_delete(mod_name):
         return jsonify({'status': 'deleted'})
     return jsonify({'error': 'File not found'}), 404
 
+# ------------------- API для поиска модов (Modrinth + CurseForge) -------------------
+@app.route('/api/mods/search')
+@login_required
+@require_config
+def api_mods_search():
+    query = request.args.get('q', '').strip()
+    version = request.args.get('version', '').strip()
+    if not query:
+        return jsonify({'error': 'No query'}), 400
+
+    def modrinth_search_mods(facets):
+        import urllib.parse
+        facets_json = json.dumps(facets)
+        url = f"https://api.modrinth.com/v2/search?query={urllib.parse.quote(query)}&facets={urllib.parse.quote(facets_json)}&limit=20"
+        try:
+            resp = requests.get(url, timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+            return data.get('hits', [])
+        except Exception as e:
+            app.logger.error(f"Modrinth mod search error: {e}")
+            raise
+
+    modrinth_results = []
+    base_facets = [["project_type:mod"]]
+    try:
+        if version:
+            facets_with_version = [["project_type:mod"], [f"versions:{version}"]]
+            modrinth_results = modrinth_search_mods(facets_with_version)
+            if not modrinth_results:
+                modrinth_results = modrinth_search_mods(base_facets)
+        else:
+            modrinth_results = modrinth_search_mods(base_facets)
+    except Exception as e:
+        app.logger.warning(f"Modrinth mod search failed: {e}")
+
+    unified = []
+    for item in modrinth_results:
+        unified.append({
+            'id': item['project_id'],
+            'title': item['title'],
+            'description': item['description'],
+            'downloads': item['downloads'],
+            'icon_url': item.get('icon_url', ''),
+            'versions': item.get('versions', [])[:3],
+            'source': 'modrinth'
+        })
+
+    def curseforge_search_mods(query, game_id=432):
+        api_key = config.get('CURSEFORGE_API_KEY')
+        if not api_key:
+            return []
+        headers = {'x-api-key': api_key, 'Accept': 'application/json'}
+        url = 'https://api.curseforge.com/v1/mods/search'
+        params = {
+            'gameId': game_id,
+            'searchFilter': query,
+            'sortField': 1,
+            'sortOrder': 'desc',
+            'pageSize': 20,
+        }
+        try:
+            resp = requests.get(url, headers=headers, params=params, timeout=10)
+            if resp.status_code == 200:
+                data = resp.json()
+                results = data.get('data', [])
+                simplified = []
+                for item in results:
+                    versions = []
+                    for file in item.get('latestFiles', [])[:3]:
+                        if file.get('gameVersion'):
+                            versions.extend(file['gameVersion'])
+                    versions = list(set(versions))[:3]
+                    simplified.append({
+                        'id': str(item['id']),
+                        'title': item['name'],
+                        'description': item.get('summary', ''),
+                        'downloads': item.get('downloadCount', 0),
+                        'icon_url': item.get('logo', {}).get('url', ''),
+                        'versions': versions,
+                        'source': 'curseforge'
+                    })
+                return simplified
+            else:
+                app.logger.warning(f"CurseForge mod API returned {resp.status_code}")
+                return []
+        except Exception as e:
+            app.logger.error(f"CurseForge mod search error: {e}")
+            return []
+
+    curse_results = curseforge_search_mods(query)
+    unified.extend(curse_results)
+    unified.sort(key=lambda x: x['downloads'], reverse=True)
+    return jsonify({'results': unified})
+
+@app.route('/api/mods/download/modrinth/<project_id>', methods=['POST'])
+@login_required
+@require_config
+def api_mods_download_modrinth(project_id):
+    url = f"https://api.modrinth.com/v2/project/{project_id}/version"
+    try:
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        versions = resp.json()
+        if not versions:
+            return jsonify({'error': 'No versions found'}), 404
+        latest = versions[0]
+        for file in latest['files']:
+            if file['filename'].endswith('.jar'):
+                download_url = file['url']
+                filename = file['filename']
+                file_resp = requests.get(download_url, stream=True)
+                file_resp.raise_for_status()
+                mods_dir = get_mods_dir()
+                if mods_dir:
+                    save_path = os.path.join(mods_dir, filename)
+                    with open(save_path, 'wb') as f:
+                        for chunk in file_resp.iter_content(chunk_size=8192):
+                            f.write(chunk)
+                    return jsonify({'status': 'downloaded', 'filename': filename})
+                else:
+                    return jsonify({'error': 'Mods directory not configured'}), 500
+        return jsonify({'error': 'No jar file found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/mods/download/curseforge/<mod_id>', methods=['POST'])
+@login_required
+@require_config
+def api_mods_download_curseforge(mod_id):
+    api_key = config.get('CURSEFORGE_API_KEY')
+    if not api_key:
+        return jsonify({'error': 'CurseForge API key not configured'}), 400
+    headers = {'x-api-key': api_key}
+    url = f'https://api.curseforge.com/v1/mods/{mod_id}/files'
+    try:
+        resp = requests.get(url, headers=headers, timeout=10)
+        if resp.status_code != 200:
+            return jsonify({'error': 'Failed to fetch file list'}), resp.status_code
+        data = resp.json()
+        files = data.get('data', [])
+        if not files:
+            return jsonify({'error': 'No files found'}), 404
+        latest = files[0]
+        file_id = latest['id']
+        download_url = f'https://api.curseforge.com/v1/mods/{mod_id}/files/{file_id}/download-url'
+        resp2 = requests.get(download_url, headers=headers, timeout=10)
+        if resp2.status_code != 200:
+            return jsonify({'error': 'Failed to get download URL'}), resp2.status_code
+        download_info = resp2.json()
+        url_to_file = download_info.get('data')
+        if not url_to_file:
+            return jsonify({'error': 'No download URL'}), 404
+        file_resp = requests.get(url_to_file, stream=True)
+        file_resp.raise_for_status()
+        filename = latest['fileName']
+        mods_dir = get_mods_dir()
+        if not mods_dir:
+            return jsonify({'error': 'Mods directory not configured'}), 500
+        save_path = os.path.join(mods_dir, filename)
+        with open(save_path, 'wb') as f:
+            for chunk in file_resp.iter_content(chunk_size=8192):
+                f.write(chunk)
+        return jsonify({'status': 'downloaded', 'filename': filename})
+    except Exception as e:
+        app.logger.error(f"CurseForge mod download error: {e}")
+        return jsonify({'error': str(e)}), 500
+
 # ------------------- API для управления пользователями -------------------
 @app.route('/api/users')
 @login_required
@@ -1015,6 +1190,141 @@ def api_filemanager_upload():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ------------------- Discord интеграция -------------------
+def send_discord_notification(message, color=0x4caf50, title=None):
+    webhook_url = config.get('DISCORD_WEBHOOK_URL')
+    if not webhook_url:
+        return
+
+    def _send():
+        try:
+            payload = {
+                "embeds": [{
+                    "title": title or "Minecraft Panel",
+                    "description": message,
+                    "color": color,
+                    "timestamp": datetime.datetime.utcnow().isoformat()
+                }]
+            }
+            requests.post(webhook_url, json=payload, timeout=5)
+        except Exception as e:
+            app.logger.error(f"Discord notification failed: {e}")
+
+    threading.Thread(target=_send, daemon=True).start()
+
+def send_discord_status():
+    webhook_url = config.get('DISCORD_WEBHOOK_URL')
+    if not webhook_url:
+        return
+
+    is_running = server_manager.is_running()
+    players = server_manager.get_players() if is_running else []
+    player_count = len(players)
+    players_list = ', '.join(players) if players else 'нет'
+
+    mem = psutil.virtual_memory()
+    cpu = psutil.cpu_percent(interval=0.1)
+
+    status_emoji = "🟢" if is_running else "🔴"
+    status_text = "Запущен" if is_running else "Остановлен"
+
+    embed = {
+        "title": f"{status_emoji} Статус сервера",
+        "color": 0x4caf50 if is_running else 0xf44336,
+        "fields": [
+            {"name": "Статус", "value": status_text, "inline": True},
+            {"name": "Игроки онлайн", "value": f"{player_count} / {config.get('MAX_PLAYERS', 20)}", "inline": True},
+            {"name": "Список игроков", "value": players_list if players else "—", "inline": False},
+            {"name": "CPU", "value": f"{cpu}%", "inline": True},
+            {"name": "RAM", "value": f"{mem.percent}% ({mem.used // (1024**3)} GB / {mem.total // (1024**3)} GB)", "inline": True},
+        ],
+        "timestamp": datetime.datetime.utcnow().isoformat()
+    }
+
+    try:
+        requests.post(webhook_url, json={"embeds": [embed]}, timeout=5)
+    except Exception as e:
+        app.logger.error(f"Discord status send failed: {e}")
+
+def discord_status_loop():
+    while True:
+        interval = config.get('DISCORD_STATUS_INTERVAL')
+        if interval > 0:
+            send_discord_status()
+        time.sleep(interval * 60 if interval > 0 else 60)
+
+def discord_log_monitor():
+    last_size = 0
+    last_notify = {}
+    COOLDOWN = 5
+    while True:
+        server_dir = config.get('SERVER_DIR')
+        webhook_url = config.get('DISCORD_WEBHOOK_URL')
+        if not webhook_url or not server_dir:
+            time.sleep(10)
+            continue
+
+        notify_join_leave = config.get('DISCORD_NOTIFY_JOIN_LEAVE')
+        if not notify_join_leave:
+            time.sleep(30)
+            continue
+
+        if not server_manager.is_running():
+            time.sleep(5)
+            continue
+
+        log_file_path = os.path.join(server_dir, "server_stdout.log")
+        if not os.path.exists(log_file_path):
+            time.sleep(5)
+            continue
+
+        join_pattern = re.compile(r'(?:logged in|joined the game)')
+        leave_pattern = re.compile(r'(?:left the game|disconnected|lost connection)')
+        name_pattern = re.compile(r'\s([\w_]+)(?:\[|\s+joined|\s+left|\s+disconnected|\s+lost)')
+
+        try:
+            with open(log_file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                f.seek(0, os.SEEK_END)
+                current_size = f.tell()
+                if current_size < last_size:
+                    last_size = 0
+                    f.seek(0)
+                elif current_size == last_size:
+                    time.sleep(1)
+                    continue
+                else:
+                    f.seek(last_size)
+
+                lines = f.readlines()
+                last_size = f.tell()
+
+                for line in lines:
+                    line = re.sub(r'§[0-9a-fklmnor]', '', line)
+                    if join_pattern.search(line):
+                        match = name_pattern.search(line)
+                        if match:
+                            player = match.group(1)
+                            send_discord_notification(f"**Игрок вошёл на сервер**\n{player}", color=0x4caf50, title="Player Join")
+                    elif leave_pattern.search(line):
+                        match = name_pattern.search(line)
+                        if match:
+                            player = match.group(1)
+                            now = time.time()
+                            if player not in last_notify or now - last_notify[player] > COOLDOWN:
+                                send_discord_notification(f"**Игрок покинул сервер**\n{player}", color=0xf44336, title="Player Leave")
+                                last_notify[player] = now
+        except Exception as e:
+            app.logger.error(f"Discord monitor error: {e}")
+        time.sleep(1)
+
+@app.route('/api/discord/send_status', methods=['POST'])
+@login_required
+@admin_required
+@require_config
+def api_discord_send_status():
+    send_discord_status()
+    return jsonify({'message': 'Status sent to Discord'})
+
 # ------------------- Настройка -------------------
 @app.route('/setup', methods=['GET', 'POST'])
 def setup():
@@ -1068,6 +1378,12 @@ def api_settings():
         config.set('MAX_BACKUPS', int(data['MAX_BACKUPS']))
     if 'CURSEFORGE_API_KEY' in data:
         config.set('CURSEFORGE_API_KEY', data['CURSEFORGE_API_KEY'])
+    if 'DISCORD_WEBHOOK_URL' in data:
+        config.set('DISCORD_WEBHOOK_URL', data['DISCORD_WEBHOOK_URL'])
+    if 'DISCORD_STATUS_INTERVAL' in data:
+        config.set('DISCORD_STATUS_INTERVAL', int(data['DISCORD_STATUS_INTERVAL']))
+    if 'DISCORD_NOTIFY_JOIN_LEAVE' in data:
+        config.set('DISCORD_NOTIFY_JOIN_LEAVE', data['DISCORD_NOTIFY_JOIN_LEAVE'])
     return jsonify({'status': 'updated'})
 
 @app.route('/set_language/<lang>')
@@ -1079,5 +1395,7 @@ def set_language(lang):
 # ------------------- Запуск -------------------
 if __name__ == '__main__':
     migrate_admin_from_config()
+    threading.Thread(target=discord_status_loop, daemon=True).start()
+    threading.Thread(target=discord_log_monitor, daemon=True).start()
     port = int(os.environ.get('PORT', 8081))
     app.run(debug=False, host='0.0.0.0', port=port)

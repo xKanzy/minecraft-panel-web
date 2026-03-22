@@ -7,7 +7,7 @@ translations = {
         'Dashboard': 'Dashboard',
         'Console': 'Console',
         'Players': 'Players',
-        'Plugins': 'Plugins',
+        'Plugins & Modrinth': 'Plugins & Modrinth',
         'Backups': 'Backups',
         'Statistics': 'Statistics',
         'Settings': 'Settings',
@@ -100,6 +100,14 @@ translations = {
         'Failed to save settings.': 'Failed to save settings.',
         'Server directory does not exist.': 'Server directory does not exist.',
         'CurseForge API Key (optional)': 'CurseForge API Key (optional)',
+        # Discord
+        'Discord Webhook URL (optional)': 'Discord Webhook URL (optional)',
+        'Send notifications to Discord channel. Leave empty to disable.': 'Send notifications to Discord channel. Leave empty to disable.',
+        'Status report interval (minutes, 0 = off)': 'Status report interval (minutes, 0 = off)',
+        'Send automatic status updates every X minutes.': 'Send automatic status updates every X minutes.',
+        'Notify about players join/leave': 'Notify about players join/leave',
+        'Send Status to Discord': 'Send Status to Discord',
+        'Status sent to Discord': 'Status sent to Discord',
         # Файловый менеджер
         'Current Path': 'Current Path',
         'Go Up': 'Go Up',
@@ -130,6 +138,27 @@ translations = {
         # Общее
         'Powered by': 'Powered by',
         'Passwords do not match or empty': 'Passwords do not match or empty',
+        # Setup guide
+        'Configure Existing Server': 'Configure Existing Server',
+        'Create a New Server (Manual)': 'Create a New Server (Manual)',
+        'Choose a server core': 'Choose a server core',
+        'Select the type of server you want to run. Popular choices:': 'Select the type of server you want to run. Popular choices:',
+        'Download the latest stable server JAR and place it in an empty folder.': 'Download the latest stable server JAR and place it in an empty folder.',
+        'Accept the EULA': 'Accept the EULA',
+        'Create a file named': 'Create a file named',
+        'in the server folder with the following content:': 'in the server folder with the following content:',
+        'Configure server properties (optional)': 'Configure server properties (optional)',
+        'You can edit': 'You can edit',
+        'later. Basic settings:': 'later. Basic settings:',
+        'Set up the panel': 'Set up the panel',
+        'Now switch to the "Configure Existing Server" tab above, enter the path to this folder, and click "Save and Continue".': 'Now switch to the "Configure Existing Server" tab above, enter the path to this folder, and click "Save and Continue".',
+        'If you prefer to test the server first, you can run it once:': 'If you prefer to test the server first, you can run it once:',
+        'Wait for the world to generate, then stop it by typing': 'Wait for the world to generate, then stop it by typing',
+        'in console.': 'in console.',
+        'Need more help? Check the official documentation or ask in community forums.': 'Need more help? Check the official documentation or ask in community forums.',
+        'If you are using a non-premium Minecraft account, set': 'If you are using a non-premium Minecraft account, set',
+        'to': 'to',
+        'in server.properties.': 'in server.properties.',
     },
     'ru': {
         # Основные
@@ -137,7 +166,7 @@ translations = {
         'Dashboard': 'Главная',
         'Console': 'Консоль',
         'Players': 'Игроки',
-        'Plugins': 'Плагины',
+        'Plugins & Modrinth': 'Плагины и Modrinth',
         'Backups': 'Резервные копии',
         'Statistics': 'Статистика',
         'Settings': 'Настройки',
@@ -230,6 +259,14 @@ translations = {
         'Failed to save settings.': 'Не удалось сохранить настройки.',
         'Server directory does not exist.': 'Папка сервера не существует.',
         'CurseForge API Key (optional)': 'Ключ API CurseForge (опционально)',
+        # Discord
+        'Discord Webhook URL (optional)': 'URL вебхука Discord (опционально)',
+        'Send notifications to Discord channel. Leave empty to disable.': 'Отправлять уведомления в канал Discord. Оставьте пустым, чтобы отключить.',
+        'Status report interval (minutes, 0 = off)': 'Интервал отчётов (минуты, 0 = выкл)',
+        'Send automatic status updates every X minutes.': 'Отправлять автоматические отчёты каждые X минут.',
+        'Notify about players join/leave': 'Уведомлять о входе/выходе игроков',
+        'Send Status to Discord': 'Отправить статус в Discord',
+        'Status sent to Discord': 'Статус отправлен в Discord',
         # Файловый менеджер
         'Current Path': 'Текущий путь',
         'Go Up': 'На уровень выше',
@@ -260,7 +297,29 @@ translations = {
         # Общее
         'Powered by': 'Работает на',
         'Passwords do not match or empty': 'Пароли не совпадают или пустые',
-        'Tools': 'Инструменты'
+        # Setup guide
+        'Configure Existing Server': 'Настроить существующий сервер',
+        'Create a New Server (Manual)': 'Создать новый сервер (вручную)',
+        'Choose a server core': 'Выберите ядро сервера',
+        'Select the type of server you want to run. Popular choices:': 'Выберите тип сервера. Популярные варианты:',
+        'Download the latest stable server JAR and place it in an empty folder.': 'Скачайте последний стабильный JAR-файл сервера и поместите его в пустую папку.',
+        'Accept the EULA': 'Принять лицензионное соглашение (EULA)',
+        'Create a file named': 'Создайте файл с именем',
+        'in the server folder with the following content:': 'в папке сервера со следующим содержимым:',
+        'Configure server properties (optional)': 'Настройка server.properties (опционально)',
+        'You can edit': 'Вы можете отредактировать',
+        'later. Basic settings:': 'позже. Базовые настройки:',
+        'Set up the panel': 'Настройте панель',
+        'Now switch to the "Configure Existing Server" tab above, enter the path to this folder, and click "Save and Continue".': 'Теперь перейдите на вкладку «Настроить существующий сервер» выше, укажите путь к этой папке и нажмите «Сохранить и продолжить».',
+        'If you prefer to test the server first, you can run it once:': 'Если вы хотите сначала протестировать сервер, вы можете запустить его один раз:',
+        'Wait for the world to generate, then stop it by typing': 'Дождитесь генерации мира, затем остановите его, введя',
+        'in console.': 'в консоль.',
+        'Need more help? Check the official documentation or ask in community forums.': 'Нужна помощь? Посмотрите официальную документацию или спросите на форумах.',
+        'If you are using a non-premium Minecraft account, set': 'Если вы используете нелицензионный аккаунт Minecraft, установите',
+        'to': 'в',
+        'in server.properties.': 'в файле server.properties.',
+        'Tools': 'Инструменты',
+        'Plugins': 'Плагины'
     }
 }
 

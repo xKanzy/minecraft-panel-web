@@ -31,6 +31,20 @@
                 <label for="curseforge_api_key" class="form-label">{{ _('CurseForge API Key (optional)') }}</label>
                 <input type="text" class="form-control" id="curseforge_api_key" value="{{ config.CURSEFORGE_API_KEY }}">
             </div>
+            <div class="mb-3">
+                <label for="discord_webhook" class="form-label">{{ _('Discord Webhook URL (optional)') }}</label>
+                <input type="text" class="form-control" id="discord_webhook" value="{{ config.DISCORD_WEBHOOK_URL }}">
+                <div class="form-text">{{ _('Send notifications to Discord channel. Leave empty to disable.') }}</div>
+            </div>
+            <div class="mb-3">
+                <label for="discord_status_interval" class="form-label">{{ _('Status report interval (minutes, 0 = off)') }}</label>
+                <input type="number" class="form-control" id="discord_status_interval" value="{{ config.DISCORD_STATUS_INTERVAL }}">
+                <div class="form-text">{{ _('Send automatic status updates every X minutes.') }}</div>
+            </div>
+            <div class="form-check mb-3">
+                <input type="checkbox" class="form-check-input" id="discord_notify_join_leave" {% if config.DISCORD_NOTIFY_JOIN_LEAVE %}checked{% endif %}>
+                <label class="form-check-label" for="discord_notify_join_leave">{{ _('Notify about players join/leave') }}</label>
+            </div>
             <button type="submit" class="btn btn-primary">{{ _('Save Changes') }}</button>
         </form>
     </div>
@@ -56,7 +70,6 @@
 </div>
 
 <script>
-    // Сохранение настроек сервера
     document.getElementById('settingsForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const data = {
@@ -65,7 +78,10 @@
             JAVA_CMD: document.getElementById('java_cmd').value,
             JAVA_ARGS: document.getElementById('java_args').value,
             MAX_BACKUPS: parseInt(document.getElementById('max_backups').value),
-            CURSEFORGE_API_KEY: document.getElementById('curseforge_api_key').value
+            CURSEFORGE_API_KEY: document.getElementById('curseforge_api_key').value,
+            DISCORD_WEBHOOK_URL: document.getElementById('discord_webhook').value,
+            DISCORD_STATUS_INTERVAL: parseInt(document.getElementById('discord_status_interval').value),
+            DISCORD_NOTIFY_JOIN_LEAVE: document.getElementById('discord_notify_join_leave').checked
         };
         const res = await fetch('/api/settings', {
             method: 'POST',
@@ -80,7 +96,6 @@
         }
     });
 
-    // Смена пароля
     document.getElementById('changePasswordBtn').onclick = () => {
         const old = document.getElementById('old_password').value;
         const newpwd = document.getElementById('new_password').value;

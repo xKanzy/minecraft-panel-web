@@ -18,6 +18,8 @@
                 <button id="newFolderBtn" class="btn btn-sm btn-outline-primary w-100 mb-2">{{ _('New Folder') }}</button>
                 <button id="uploadBtn" class="btn btn-sm btn-outline-info w-100">{{ _('Upload File') }}</button>
                 <input type="file" id="uploadFileInput" style="display:none">
+                <hr>
+                <button id="resetBackdropBtn" class="btn btn-sm btn-outline-danger w-100">{{ _('Reset Stuck Backdrop') }}</button>
             </div>
         </div>
     </div>
@@ -38,7 +40,6 @@
     </div>
 </div>
 
-<!-- Custom modal (no Bootstrap modal JS) -->
 <div id="customModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
     <div style="background:#1e1e2e; border-radius:12px; width:90%; max-width:800px; max-height:90%; overflow:auto; padding:20px;">
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #4caf50; margin-bottom:15px;">
@@ -57,18 +58,23 @@
     let currentPath = '';
     let editingFile = null;
 
-    // Clean up any leftover Bootstrap modal backdrops
     function cleanUpBackdrops() {
         document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
         document.body.classList.remove('modal-open');
     }
 
     function loadDirectory(path) {
+        const listDiv = document.getElementById('fileList');
+        listDiv.innerHTML = '<div class="list-group-item text-center">{{ _("Loading...") }}</div>';
+
         fetch(`/api/filemanager/list?path=${encodeURIComponent(path)}`)
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
             .then(data => {
                 if (data.error) {
-                    document.getElementById('fileList').innerHTML = `<div class="list-group-item text-danger">${data.error}</div>`;
+                    listDiv.innerHTML = `<div class="list-group-item text-danger">${data.error}</div>`;
                     return;
                 }
                 currentPath = data.path;
@@ -105,14 +111,17 @@
             })
             .catch(err => {
                 console.error("Load directory error:", err);
-                document.getElementById('fileList').innerHTML = '<div class="list-group-item text-danger">Failed to load directory</div>';
+                listDiv.innerHTML = `<div class="list-group-item text-danger">${err.message}</div>`;
             });
     }
 
     function editFile(filePath) {
         cleanUpBackdrops();
         fetch(`/api/filemanager/file?path=${encodeURIComponent(filePath)}`)
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
             .then(data => {
                 if (data.error) {
                     alert(data.error);
@@ -122,13 +131,12 @@
                 document.getElementById('modalFileContent').value = data.content;
                 const modal = document.getElementById('customModal');
                 modal.style.display = 'flex';
-                // Force reflow to trigger transition
                 modal.offsetHeight;
                 modal.classList.add('show');
             })
             .catch(err => {
                 console.error("Fetch file error:", err);
-                alert("Failed to load file: " + err);
+                alert("Failed to load file: " + err.message);
             });
     }
 
@@ -139,6 +147,7 @@
             modal.style.display = 'none';
             editingFile = null;
             document.getElementById('modalFileContent').value = '';
+            cleanUpBackdrops();
         }, 200);
     }
 
@@ -159,7 +168,8 @@
             })
             .catch(err => {
                 console.error("Save error:", err);
-                alert("Error saving file: " + err);
+                alert("Error saving file: " + err.message);
+                closeModal();
             });
     }
 
@@ -175,7 +185,7 @@
                 if (data.error) alert(data.error);
                 else loadDirectory(currentPath);
             })
-            .catch(err => alert("Delete error: " + err));
+            .catch(err => alert("Delete error: " + err.message));
     }
 
     function createNewFile() {
@@ -247,7 +257,6 @@
         return div.innerHTML;
     }
 
-    // Bind buttons
     document.getElementById('refreshBtn').onclick = () => loadDirectory(currentPath);
     document.getElementById('goUpBtn').onclick = goUp;
     document.getElementById('newFileBtn').onclick = createNewFile;
@@ -260,13 +269,6 @@
     document.getElementById('cancelModalBtn').onclick = closeModal;
     document.getElementById('closeModalBtn').onclick = closeModal;
 
-    // Initial load
-    fetch('/api/filemanager/list')
-        .then(res => res.json())
-        .then(data => {
-            if (data.error) alert(data.error);
-            else loadDirectory(data.path);
-        })
-        .catch(err => console.error("Initial load error:", err));
+    loadDirectory('');
 </script>
 {% endblock %}

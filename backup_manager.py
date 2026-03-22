@@ -10,10 +10,7 @@ class BackupManager:
         self.max_backups = config.get('MAX_BACKUPS')
         self.server_dir = config.get('SERVER_DIR')
         if self.backup_dir:
-            try:
-                os.makedirs(self.backup_dir, exist_ok=True)
-            except:
-                pass
+            os.makedirs(self.backup_dir, exist_ok=True)
 
     def create_backup(self):
         if not self.backup_dir or not self.server_dir:
@@ -43,19 +40,16 @@ class BackupManager:
         if not self.backup_dir or not os.path.exists(self.backup_dir):
             return []
         backups = []
-        try:
-            for filename in os.listdir(self.backup_dir):
-                if filename.endswith('.zip'):
-                    filepath = os.path.join(self.backup_dir, filename)
-                    stat = os.stat(filepath)
-                    backups.append({
-                        'name': filename,
-                        'size': stat.st_size,
-                        'modified': datetime.datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
-                    })
-            backups.sort(key=lambda x: x['name'], reverse=True)
-        except:
-            pass
+        for filename in os.listdir(self.backup_dir):
+            if filename.endswith('.zip'):
+                filepath = os.path.join(self.backup_dir, filename)
+                stat = os.stat(filepath)
+                backups.append({
+                    'name': filename,
+                    'size': stat.st_size,
+                    'modified': datetime.datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+                })
+        backups.sort(key=lambda x: x['name'], reverse=True)
         return backups
 
     def restore_backup(self, backup_name):
@@ -89,11 +83,8 @@ class BackupManager:
             return False
         backup_path = os.path.join(self.backup_dir, backup_name)
         if os.path.exists(backup_path):
-            try:
-                os.remove(backup_path)
-                return True
-            except:
-                pass
+            os.remove(backup_path)
+            return True
         return False
 
     def _cleanup_old_backups(self):

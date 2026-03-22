@@ -29,7 +29,9 @@
                     .then(data => {
                         const list = document.getElementById('playersList');
                         list.innerHTML = '';
-                        if (data.players.length === 0) {
+                        if (data.error) {
+                            list.innerHTML = `<li class="list-group-item text-danger">${data.error}</li>`;
+                        } else if (data.players.length === 0) {
                             list.innerHTML = '<li class="list-group-item">{{ _("No players online.") }}</li>';
                         } else {
                             data.players.forEach(player => {
@@ -47,10 +49,8 @@
         fetch('/api/command', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ command: 'list' })
-        }).then(() => {
-            setTimeout(updatePlayers, 1000);
-        });
+            body: JSON.stringify({command: 'list'})
+        }).then(() => setTimeout(updatePlayers, 1000));
     }
 
     document.getElementById('refreshPlayersBtn').onclick = refreshPlayers;

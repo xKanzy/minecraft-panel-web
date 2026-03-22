@@ -26,10 +26,12 @@
                     <li class="nav-item"><a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">{{ _('Dashboard') }}</a></li>
                     <li class="nav-item"><a class="nav-link {% if request.endpoint == 'console' %}active{% endif %}" href="{{ url_for('console') }}">{{ _('Console') }}</a></li>
                     <li class="nav-item"><a class="nav-link {% if request.endpoint == 'players' %}active{% endif %}" href="{{ url_for('players') }}">{{ _('Players') }}</a></li>
-
+                    <li class="nav-item"><a class="nav-link {% if request.endpoint == 'mods' %}active{% endif %}" href="{{ url_for('mods') }}">{{ _('Mods') }}</a></li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="toolsDropdown" role="button">{{ _('Tools') }}</a>
-                        <ul class="dropdown-menu" aria-labelledby="toolsDropdown" style="display: none;">
+                        <a class="nav-link dropdown-toggle" href="#" id="toolsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            {{ _('Tools') }}
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="toolsDropdown">
                             <li><a class="dropdown-item {% if request.endpoint == 'plugins' %}active{% endif %}" href="{{ url_for('plugins') }}">{{ _('Plugins') }}</a></li>
                             <li><a class="dropdown-item {% if request.endpoint == 'filemanager' %}active{% endif %}" href="{{ url_for('filemanager') }}">{{ _('File Manager') }}</a></li>
                             <li><a class="dropdown-item {% if request.endpoint == 'backups' %}active{% endif %}" href="{{ url_for('backups') }}">{{ _('Backups') }}</a></li>
@@ -41,7 +43,6 @@
                             {% endif %}
                         </ul>
                     </li>
-
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">{{ _('Logout') }}</a></li>
                 </ul>
                 <div class="language-switcher">
@@ -57,23 +58,24 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         (function() {
-            // Находим все dropdown-меню
+            // Перемещаем выпадающее меню в body и позиционируем вручную
             const dropdowns = document.querySelectorAll('.dropdown');
             dropdowns.forEach(dropdown => {
                 const toggle = dropdown.querySelector('.dropdown-toggle');
                 const originalMenu = dropdown.querySelector('.dropdown-menu');
                 if (!toggle || !originalMenu) return;
 
-                // Создаём копию меню и перемещаем в body
+                // Клонируем меню и вставляем в body
                 const menu = originalMenu.cloneNode(true);
                 document.body.appendChild(menu);
                 originalMenu.style.display = 'none'; // скрываем оригинал
+                menu.classList.add('custom-dropdown-menu');
 
                 // Открытие/закрытие по клику на кнопку
                 toggle.addEventListener('click', function(e) {
                     e.preventDefault();
                     const isVisible = menu.style.display === 'block';
-                    // Закрываем все другие меню
+                    // Закрываем все другие кастомные меню
                     document.querySelectorAll('.custom-dropdown-menu').forEach(m => {
                         if (m !== menu) m.style.display = 'none';
                     });
@@ -81,7 +83,7 @@
                         menu.style.display = 'none';
                     } else {
                         menu.style.display = 'block';
-                        // Позиционируем меню под кнопкой
+                        // Позиционируем под кнопкой
                         const rect = toggle.getBoundingClientRect();
                         menu.style.position = 'fixed';
                         menu.style.top = rect.bottom + window.scrollY + 'px';
@@ -101,8 +103,6 @@
                         menu.style.display = 'none';
                     }
                 });
-
-                menu.classList.add('custom-dropdown-menu');
             });
         })();
     </script>

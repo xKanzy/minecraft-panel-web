@@ -3,26 +3,50 @@
 {% block content %}
 <h1>{{ _('Mods') }}</h1>
 
-<div class="card mb-4">
-    <div class="card-header">{{ _('Upload Mod') }}</div>
-    <div class="card-body">
-        <form id="uploadForm" enctype="multipart/form-data">
-            <div class="input-group">
-                <input type="file" id="modFile" class="form-control" accept=".jar">
-                <button type="submit" class="btn btn-primary">{{ _('Upload') }}</button>
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">{{ _('Installed Mods') }}</div>
+            <div class="card-body">
+                <form id="uploadForm" enctype="multipart/form-data" class="mb-3">
+                    <div class="input-group">
+                        <input type="file" id="modFile" class="form-control" accept=".jar">
+                        <button type="submit" class="btn btn-primary">{{ _('Upload') }}</button>
+                    </div>
+                </form>
+                <ul id="modsList" class="list-group">
+                    <li class="list-group-item">{{ _('Loading...') }}</li>
+                </ul>
             </div>
-        </form>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">{{ _('Modrinth & CurseForge') }}</div>
+            <div class="card-body">
+                <div class="row g-2 mb-3">
+                    <div class="col-md-7">
+                        <input type="text" id="searchInput" class="form-control" placeholder="{{ _('Search for mods...') }}">
+                    </div>
+                    <div class="col-md-5">
+                        <input type="text" id="versionInput" class="form-control" placeholder="{{ _('Minecraft version (e.g., 1.20.4)') }}">
+                    </div>
+                    <div class="col-12 mt-2">
+                        <button id="searchBtn" class="btn btn-primary w-100">{{ _('Search') }}</button>
+                    </div>
+                </div>
+                <div id="modrinthResults" class="row"></div>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="card">
-    <div class="card-header">{{ _('Installed Mods') }}</div>
-    <div class="card-body">
-        <ul id="modsList" class="list-group">
-            <li class="list-group-item">{{ _('Loading...') }}</li>
-        </ul>
-    </div>
-</div>
+<footer class="mt-5 text-center text-muted">
+    <small>
+        {{ _('Powered by') }} <a href="https://modrinth.com" target="_blank">Modrinth API</a> & <a href="https://www.curseforge.com" target="_blank">CurseForge API</a>
+    </small>
+</footer>
 
 <script>
     function loadMods() {
@@ -74,6 +98,88 @@
             });
     };
 
+    function searchMods() {
+        const query = document.getElementById('searchInput').value;
+        const version = document.getElementById('versionInput').value;
+        if (!query) return;
+        localStorage.setItem('mods_last_query', query);
+        localStorage.setItem('mods_last_version', version);
+        let url = `/api/mods/search?q=${encodeURIComponent(query)}`;
+        if (version) url += `&version=${encodeURIComponent(version)}`;
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                const resultsDiv = document.getElementById('modrinthResults');
+                if (data.error) {
+                    resultsDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                    return;
+                }
+                if (data.results.length === 0) {
+                    resultsDiv.innerHTML = '<div class="alert alert-info">{{ _("No mods found.") }}</div>';
+                    return;
+                }
+                let html = '';
+                for (const mod of data.results) {
+                    const iconHtml = mod.icon_url
+                        ? `<img src="${mod.icon_url}" alt="${mod.title}" style="width:48px; height:48px; object-fit:cover; border-radius:8px;" class="me-3">`
+                        : '<div class="me-3" style="width:48px; height:48px; background:#6c757d; border-radius:8px;"></div>';
+                    const versionsHtml = mod.versions.length
+                        ? `<small class="text-muted">{{ _("Versions:") }} ${mod.versions.join(', ')}</small>`
+                        : '<small class="text-muted">{{ _("No version info") }}</small>';
+                    let buttonHtml;
+                    if (mod.source === 'curseforge') {
+                        buttonHtml = `<button class="btn btn-sm btn-success mt-2" onclick="downloadCurseForgeMod('${mod.id}')">{{ _('Download') }}</button>`;
+                    } else {
+                        buttonHtml = `<button class="btn btn-sm btn-success mt-2" onclick="downloadModrinthMod('${mod.id}')">{{ _('Download') }}</button>`;
+                    }
+                    const sourceBadge = mod.source === 'curseforge'
+                        ? '<span class="badge bg-secondary ms-2">CurseForge</span>'
+                        : '<span class="badge bg-info ms-2">Modrinth</span>';
+                    html += `
+                        <div class="col-md-12 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body d-flex">
+                                    ${iconHtml}
+                                    <div style="flex:1">
+                                        <h5 class="card-title">${escapeHtml(mod.title)} ${sourceBadge}</h5>
+                                        <p class="card-text">${escapeHtml(mod.description.substring(0, 100))}...</p>
+                                        <p class="card-text"><small class="text-muted">Downloads: ${mod.downloads}</small></p>
+                                        ${versionsHtml}
+                                        ${buttonHtml}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                resultsDiv.innerHTML = html;
+            });
+    }
+
+    function downloadModrinthMod(projectId) {
+        fetch(`/api/mods/download/modrinth/${projectId}`, {method: 'POST'})
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) alert(data.error);
+                else {
+                    alert(`{{ _("Mod downloaded:") }} ${data.filename}`);
+                    loadMods();
+                }
+            });
+    }
+
+    function downloadCurseForgeMod(modId) {
+        fetch(`/api/mods/download/curseforge/${modId}`, {method: 'POST'})
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) alert(data.error);
+                else {
+                    alert(`{{ _("Mod downloaded:") }} ${data.filename}`);
+                    loadMods();
+                }
+            });
+    }
+
     function escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
@@ -81,5 +187,15 @@
     }
 
     loadMods();
+    const savedQuery = localStorage.getItem('mods_last_query');
+    const savedVersion = localStorage.getItem('mods_last_version');
+    if (savedQuery) {
+        document.getElementById('searchInput').value = savedQuery;
+        document.getElementById('versionInput').value = savedVersion || '';
+        searchMods();
+    }
+    document.getElementById('searchBtn').onclick = searchMods;
+    document.getElementById('searchInput').addEventListener('keypress', e => { if (e.key === 'Enter') searchMods(); });
+    document.getElementById('versionInput').addEventListener('keypress', e => { if (e.key === 'Enter') searchMods(); });
 </script>
 {% endblock %}
